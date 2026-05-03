@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #1e3a5f;
+  --primary-dark: #0f2744;
+  --primary-light: #2d5282;
+  --accent: #10b981;
+  --accent-dark: #059669;
+  --accent-light: #34d399;
+  --surface: #f8fafc;
+  --sidebar-width: 260px;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', sans-serif;
+  background-color: var(--surface);
+  color: #1e293b;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-light);
+}
+
+/* Material overrides */
+.mat-mdc-raised-button.mat-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark)) !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+
+.mat-mdc-table {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.mat-mdc-header-cell {
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #64748b !important;
+  background: #f8fafc !important;
+}
+
+.mat-mdc-row:hover {
+  background: #f0fdf4 !important;
+  transition: background 0.15s ease;
+}
+
+/* Dialog */
+.mat-mdc-dialog-container {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}

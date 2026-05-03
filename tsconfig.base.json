@@ -1,0 +1,22 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    "paths": {
+      "@sacco/shared-models": [
+        "libs/shared-models/src/index.ts"
+      ],
+      "shared-ui": [
+        "libs/shared-ui/src/index.ts"
+      ]
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "name": "ngrx-crud",
+  "projectType": "application",
+  "root": "web",
+  "generators": {},
+  "sourceRoot": "web/src",
+  "prefix": "app",
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "options": {
+        "browser": "web/src/main.ts",
+        "polyfills": [
+          "zone.js"
+        ],
+        "tsConfig": "web/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "web/public"
+          }
+        ],
+        "styles": [
+          "web/src/custom-theme.scss",
+          "web/src/styles.css"
+        ],
+        "outputPath": "dist/web",
+        "optimization": {
+          "fonts": {
+            "inline": false
+          }
+        }
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "4kB",
+              "maximumError": "8kB"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production",
+      "outputs": [
+        "{options.outputPath}"
+      ]
+    },
+    "serve": {
+      "executor": "@angular/build:dev-server",
+      "options": {
+        "proxyConfig": "web/proxy.conf.json"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "ngrx-crud:build:production"
+        },
+        "development": {
+          "buildTarget": "ngrx-crud:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n"
+    },
+    "test": {
+      "executor": "@angular/build:karma",
+      "options": {
+        "polyfills": [
+          "zone.js",
+          "zone.js/testing"
+        ],
+        "tsConfig": "web/tsconfig.spec.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "web/public"
+          }
+        ],
+        "styles": [
+          "web/src/styles.css"
+        ]
+      }
+    }
+  }
+}

@@ -61,23 +61,32 @@ import { MatIconModule } from '@angular/material/icon';
           <span class="text-sm font-medium">Withdrawal</span>
         </a>
 
-        <a routerLink="/loan" routerLinkActive="nav-active"
+        <a routerLink="/loans/requests" routerLinkActive="nav-active"
            class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
            style="color:#94a3b8">
           <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
-            <mat-icon style="font-size:18px;width:18px;height:18px">monetization_on</mat-icon>
+            <mat-icon style="font-size:18px;width:18px;height:18px">request_quote</mat-icon>
           </div>
-          <span class="text-sm font-medium">Loan</span>
+          <span class="text-sm font-medium">Loan Requests</span>
+        </a>
+
+        <a routerLink="/loans" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}"
+           class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+           style="color:#94a3b8">
+          <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+            <mat-icon style="font-size:18px;width:18px;height:18px">account_balance_wallet</mat-icon>
+          </div>
+          <span class="text-sm font-medium">Loans</span>
         </a>
 
         <p class="text-xs font-semibold px-3 mt-6 mb-2" style="color:#4a6fa1;letter-spacing:.1em">LOOKUPS</p>
-        <a routerLink="/banks" routerLinkActive="nav-active"
+        <a routerLink="/accounts" routerLinkActive="nav-active"
            class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
            style="color:#94a3b8">
           <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
-            <mat-icon style="font-size:18px;width:18px;height:18px">account_balance</mat-icon>
+            <mat-icon style="font-size:18px;width:18px;height:18px">account_balance_wallet</mat-icon>
           </div>
-          <span class="text-sm font-medium">Banks</span>
+          <span class="text-sm font-medium">Accounts</span>
         </a>
 
         <a routerLink="/saving-types" routerLinkActive="nav-active"
@@ -87,6 +96,15 @@ import { MatIconModule } from '@angular/material/icon';
             <mat-icon style="font-size:18px;width:18px;height:18px">category</mat-icon>
           </div>
           <span class="text-sm font-medium">Saving Types</span>
+        </a>
+
+        <a routerLink="/loan-types" routerLinkActive="nav-active"
+           class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+           style="color:#94a3b8">
+          <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+            <mat-icon style="font-size:18px;width:18px;height:18px">account_balance</mat-icon>
+          </div>
+          <span class="text-sm font-medium">Loan Types</span>
         </a>
       </nav>
 

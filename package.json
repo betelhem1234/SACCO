@@ -4,6 +4,10 @@
   "scripts": {
     "ng": "ng",
     "start": "nx serve",
+    "kill:8080": "bash -c 'fuser -k 8080/tcp 2>/dev/null || true'",
+    "serve:api": "npm run kill:8080 && nx run api:serve",
+    "serve:web": "nx serve ngrx-crud",
+    "dev": "npm run kill:8080 && nx run-many -t serve -p api,ngrx-crud --parallel",
     "build": "nx build",
     "watch": "nx build --watch --configuration development",
     "test": "nx test"

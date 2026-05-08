@@ -8,19 +8,22 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { Saving, Member, Bank, SavingType } from '@sacco/shared-models';
+import { Saving, Member, SavingType } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
 import { deleteSaving } from '../../state/savings.actions';
 import { selectAllSavings } from '../../state/savings.selectors';
 import { selectAllMembers } from '../../state/members.selectors';
-import { selectAllBanks, selectAllSavingTypes } from '../../state/lookups.selectors';
+import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups.selectors';
 import { combineLatest, map } from 'rxjs';
 import { SavingFormComponent } from '../saving-form/saving-form.component';
+import { GenericDetailDialogComponent, DetailDialogData } from '../generic-detail-dialog/generic-detail-dialog.component';
 
 interface EnrichedSaving extends Saving {
+  /** Human-readable member id (e.g. M-001) from Member.idNumbe */
+  memberNumber: string;
   memberName: string;
   savingTypeName: string;
-  bankName: string;
+  accountDisplayName: string;
 }
 
 @Component({
@@ -65,7 +68,7 @@ interface EnrichedSaving extends Saving {
             <ng-container matColumnDef="memberId">
               <th mat-header-cell *matHeaderCellDef class="pl-6">Member ID</th>
               <td mat-cell *matCellDef="let saving" class="pl-6">
-                <span class="text-sm font-mono font-semibold" style="color:#1e3a5f">{{ saving.memberId }}</span>
+                <span class="text-sm font-mono font-semibold" style="color:#1e3a5f">{{ saving.memberNumber }}</span>
               </td>
             </ng-container>
 
@@ -92,11 +95,11 @@ interface EnrichedSaving extends Saving {
               </td>
             </ng-container>
 
-            <ng-container matColumnDef="bankName">
-              <th mat-header-cell *matHeaderCellDef>Bank</th>
+            <ng-container matColumnDef="accountName">
+              <th mat-header-cell *matHeaderCellDef>Account</th>
               <td mat-cell *matCellDef="let saving">
                 <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
-                  {{ saving.bankName }}
+                  {{ saving.accountDisplayName }}
                 </span>
               </td>
             </ng-container>
@@ -130,6 +133,14 @@ interface EnrichedSaving extends Saving {
               <th mat-header-cell *matHeaderCellDef>Actions</th>
               <td mat-cell *matCellDef="let saving">
                 <div class="flex items-center gap-1">
+                  <button mat-icon-button matTooltip="View" (click)="onView(saving)"
+                          class="!w-8 !h-8" style="color:#059669">
+                    <span class="material-icons" style="font-size:18px">visibility</span>
+                  </button>
+                  <button mat-icon-button matTooltip="Edit" (click)="onEdit(saving)"
+                          class="!w-8 !h-8" style="color:#1e3a5f">
+                    <span class="material-icons" style="font-size:18px">edit</span>
+                  </button>
                   <button mat-icon-button matTooltip="Print CRV" (click)="onPrint(saving)"
                           class="!w-8 !h-8" style="color:#1e3a5f">
                     <span class="material-icons" style="font-size:18px">print</span>
@@ -161,7 +172,7 @@ interface EnrichedSaving extends Saving {
 })
 export class SavingListComponent implements OnInit {
   savings$!: Observable<EnrichedSaving[]>;
-  displayedColumns: string[] = ['memberId', 'memberName', 'savingType', 'bankName', 'amount', 'ftp', 'date', 'actions'];
+  displayedColumns: string[] = ['memberId', 'memberName', 'savingType', 'accountName', 'amount', 'ftp', 'date', 'actions'];
   dataSource = new MatTableDataSource<EnrichedSaving>();
 
   constructor(private store: Store<AppState>, private dialog: MatDialog) { }
@@ -170,19 +181,23 @@ export class SavingListComponent implements OnInit {
     const rawSavings$ = this.store.select(selectAllSavings);
     const members$ = this.store.select(selectAllMembers);
     const savingTypes$ = this.store.select(selectAllSavingTypes);
-    const banks$ = this.store.select(selectAllBanks);
+    const accounts$ = this.store.select(selectAllAccounts);
 
-    this.savings$ = combineLatest([rawSavings$, members$, savingTypes$, banks$]).pipe(
-      map(([savings, members, types, banks]) => {
+    this.savings$ = combineLatest([rawSavings$, members$, savingTypes$, accounts$]).pipe(
+      map(([savings, members, types, accounts]) => {
         return (savings || []).map(saving => {
           const member = members?.find(m => m.id === saving.memberId);
           const type = types?.find(t => t.id === saving.savingType);
-          const bank = banks?.find(b => b.id === saving.bankId);
+          const account = accounts?.find(a => a.id === saving.accountId);
+          const accountDisplayName = account
+            ? `${account.name}${account.accountNumber ? ' · ' + account.accountNumber : ''}`
+            : 'Unknown account';
           return {
             ...saving,
+            memberNumber: member?.idNumbe ?? '—',
             memberName: member ? member.fullName : 'Unknown Member',
             savingTypeName: type ? type.name : 'Unknown Type',
-            bankName: bank ? bank.name : 'Unknown Bank'
+            accountDisplayName
           };
         });
       })
@@ -201,6 +216,41 @@ export class SavingListComponent implements OnInit {
     this.dialog.open(SavingFormComponent, { width: '500px' });
   }
 
+  onView(row: EnrichedSaving) {
+    const dialogData: DetailDialogData = {
+      title: 'Saving Details',
+      subTitle: row.memberName,
+      icon: 'savings',
+      data: row,
+      fields: [
+        { key: 'memberNumber', label: 'Member ID', type: 'text' },
+        { key: 'memberName', label: 'Member Name', type: 'text' },
+        { key: 'savingTypeName', label: 'Saving Type', type: 'text' },
+        { key: 'accountDisplayName', label: 'Account', type: 'text' },
+        { key: 'savingAmount', label: 'Amount', type: 'currency' },
+        { key: 'ftp', label: 'FTP Ref', type: 'text' },
+        { key: 'savingDate', label: 'Date', type: 'date' },
+        { key: 'remark', label: 'Remark', type: 'text' },
+        { key: 'createdAt', label: 'Recorded At', type: 'date' },
+      ]
+    };
+    this.dialog.open(GenericDetailDialogComponent, { data: dialogData });
+  }
+
+  onEdit(row: EnrichedSaving) {
+    const saving: Saving = {
+      id: row.id,
+      memberId: row.memberId,
+      savingAmount: row.savingAmount,
+      savingDate: row.savingDate,
+      ftp: row.ftp,
+      savingType: row.savingType,
+      accountId: row.accountId,
+      remark: row.remark,
+      createdAt: row.createdAt,
+    };
+    this.dialog.open(SavingFormComponent, { width: '500px', data: { saving } });
+  }
   onPrint(saving: EnrichedSaving) {
     window.alert(`Printing CRV for ${saving.memberName} - Amount: ${saving.savingAmount}`);
   }

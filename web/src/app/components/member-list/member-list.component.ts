@@ -12,6 +12,7 @@ import { AppState } from '../../models/state.model';
 import { deleteMember } from '../../state/members.actions';
 import { selectAllMembers } from '../../state/members.selectors';
 import { MemberFormComponent } from '../member-form/member-form.component';
+import { GenericDetailDialogComponent, DetailDialogData } from '../generic-detail-dialog/generic-detail-dialog.component';
 
 @Component({
   selector: 'app-member-list',
@@ -102,6 +103,9 @@ import { MemberFormComponent } from '../member-form/member-form.component';
               <th mat-header-cell *matHeaderCellDef>Actions</th>
               <td mat-cell *matCellDef="let member">
                 <div class="flex items-center gap-1">
+                  <button mat-icon-button (click)="onView(member)" class="!w-8 !h-8" style="color:#059669">
+                    <span class="material-icons" style="font-size:18px">visibility</span>
+                  </button>
                   <button mat-icon-button (click)="onEdit(member)" class="!w-8 !h-8" style="color:#1e3a5f">
                     <span class="material-icons" style="font-size:18px">edit</span>
                   </button>
@@ -131,7 +135,7 @@ import { MemberFormComponent } from '../member-form/member-form.component';
 })
 export class MemberListComponent implements OnInit {
   members$!: Observable<Member[]>;
-  displayedColumns: string[] = ['id', 'fullName', 'email', 'phone','is_male','member_type', 'actions'];
+  displayedColumns: string[] = ['id', 'fullName', 'email', 'phone', 'is_male', 'member_type', 'actions'];
   dataSource = new MatTableDataSource<Member>();
 
   constructor(private store: Store<AppState>, private dialog: MatDialog) { }
@@ -145,6 +149,28 @@ export class MemberListComponent implements OnInit {
 
   onAdd() { this.openMemberDialog(); }
   onEdit(member: Member) { this.openMemberDialog(member); }
+
+  onView(member: Member) {
+    const dialogData: DetailDialogData = {
+      title: 'Member Details',
+      subTitle: member.fullName,
+      icon: 'person',
+      data: member,
+      fields: [
+        { key: 'idNumbe', label: 'Member ID', type: 'text' },
+        { key: 'fullName', label: 'Full Name', type: 'text' },
+        { key: 'email', label: 'Email', type: 'text' },
+        { key: 'phone', label: 'Phone', type: 'text' },
+        { key: 'isMale', label: 'Gender', type: 'custom', formatFn: (val) => val ? 'Male' : 'Female' },
+        { key: 'memberType', label: 'Member Type', type: 'text' },
+        { key: 'membersipStatus', label: 'Membership Status', type: 'text' },
+        { key: 'branchId', label: 'Branch ID', type: 'text' },
+        { key: 'birthDate', label: 'Birth Date', type: 'date' },
+        { key: 'registrationDate', label: 'Registration Date', type: 'date' },
+      ]
+    };
+    this.dialog.open(GenericDetailDialogComponent, { data: dialogData });
+  }
 
   private openMemberDialog(member?: Member) {
     this.dialog.open(MemberFormComponent, { width: '500px', data: { member } });

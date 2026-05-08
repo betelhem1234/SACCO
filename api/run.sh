@@ -1,1 +1,1 @@
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ngrx ./mvnw spring-boot:run
+npm run serve:api

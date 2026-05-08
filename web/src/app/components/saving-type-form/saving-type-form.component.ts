@@ -8,22 +8,27 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
-import { SavingType } from '@sacco/shared-models';
+import { Account, AccountType, SavingType } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { addSavingType } from '../../state/lookups.actions';
-
+import { addSavingType, updateSavingType } from '../../state/lookups.actions';
+import { map, Observable } from 'rxjs';
+import { selectAllAccounts } from 'src/app/state/lookups.selectors';
+import { MatOption } from "@angular/material/select";
+import { MatSelectModule } from '@angular/material/select';
 @Component({
     selector: 'app-saving-type-form',
     standalone: true,
     imports: [
-        CommonModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatButtonModule,
-        MatIconModule,
-        MatDialogModule,
-        ReactiveFormsModule
-    ],
+    CommonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+    ReactiveFormsModule,
+    MatOption,
+    MatSelectModule
+],
     template: `
     <div>
       <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
@@ -42,6 +47,15 @@ import { addSavingType } from '../../state/lookups.actions';
             <input matInput formControlName="name" required />
             <mat-icon matPrefix class="mr-2" style="color:#94a3b8">label</mat-icon>
           </mat-form-field>
+           <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Deposit account</mat-label>
+              <mat-select formControlName="accountId">
+                <mat-option *ngFor="let acc of depositAccounts$ | async" [value]="acc.id">
+                  {{ acc.name }} <span class="text-xs opacity-70">({{ acc.accountNumber || 'no #' }})</span>
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix class="mr-2" style="color:#94a3b8">account_balance_wallet</mat-icon>
+            </mat-form-field>
           <mat-form-field appearance="outline" class="w-full">
             <mat-label>Description</mat-label>
             <input matInput formControlName="description" />
@@ -54,7 +68,7 @@ import { addSavingType } from '../../state/lookups.actions';
         <button [disabled]="!form.valid" (click)="submit()"
                 class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
                 style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white;box-shadow:0 4px 12px rgba(30,58,95,0.3)">
-          Save Type
+          {{ editMode ? 'Update Type' : 'Save Type' }}
         </button>
       </mat-dialog-actions>
     </div>
@@ -64,6 +78,7 @@ import { addSavingType } from '../../state/lookups.actions';
 export class SavingTypeFormComponent implements OnInit {
     form!: FormGroup;
     editMode = false;
+    depositAccounts$!: Observable<Account[]>;
 
     constructor(
         private store: Store<AppState>,
@@ -76,21 +91,34 @@ export class SavingTypeFormComponent implements OnInit {
         this.form = this.fb.group({
             id: [''],
             name: ['', Validators.required],
+            accountId: [null],
             description: [''],
         });
         if (this.data?.savingType) {
             this.editMode = true;
             this.form.patchValue(this.data.savingType);
         }
+        this.depositAccounts$ = this.store.select(selectAllAccounts).pipe(
+              map((accounts) =>
+                (accounts ?? []).filter(
+                  (a) => a.accountType === AccountType.LIABILITY && a.isActive !== false
+                )
+              )
+            );
     }
 
     submit() {
         if (this.form.invalid) return;
         const data = { ...this.form.value };
-        if (!data.id) delete data.id;
-        this.store.dispatch(addSavingType({ savingType: data }));
+        if (this.editMode && data.id) {
+            this.store.dispatch(updateSavingType({ savingType: data as SavingType }));
+        } else {
+            delete data.id;
+            this.store.dispatch(addSavingType({ savingType: data as SavingType }));
+        }
         this.dialogRef.close(true);
     }
+    
 
     onCancel() { this.dialogRef.close(); }
 }

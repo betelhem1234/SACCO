@@ -19,19 +19,14 @@ export interface Saving {
     savingDate: number;
     ftp: string;
     savingType: string;
-    bankId: string;
+    accountId: string;
     remark?: string;
     createdAt?: number;
-}
-
-export interface Bank {
-    id: string;
-    name: string;
-    code: string;
 }
 
 export interface SavingType {
     id: string;
     name: string;
+    accountId: string;
     description?: string;
 }

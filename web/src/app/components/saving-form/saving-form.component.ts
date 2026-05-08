@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, Optional } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { CommonModule } from '@angular/common';
@@ -7,16 +7,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 
-import { Saving, Member, Bank, SavingType } from '@sacco/shared-models';
+import { Saving, Member, Account, AccountCategory, SavingType } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { addSaving } from '../../state/savings.actions';
+import { addSaving, updateSaving } from '../../state/savings.actions';
 import { selectAllMembers } from '../../state/members.selectors';
-import { selectAllBanks, selectAllSavingTypes } from '../../state/lookups.selectors';
-import { loadBanks, loadSavingTypes } from '../../state/lookups.actions';
+import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups.selectors';
+import { loadAccounts, loadSavingTypes } from '../../state/lookups.actions';
 
 @Component({
   selector: 'app-saving-form',
@@ -40,8 +40,8 @@ import { loadBanks, loadSavingTypes } from '../../state/lookups.actions';
           <span class="material-icons text-white" style="font-size:20px">savings</span>
         </div>
         <div>
-          <h2 class="text-white font-bold text-base m-0">Record New Saving</h2>
-          <p class="text-xs m-0" style="color:#a7f3d0">Enter saving transaction details</p>
+          <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Saving' : 'Record New Saving' }}</h2>
+          <p class="text-xs m-0" style="color:#a7f3d0">{{ editMode ? 'Update transaction details' : 'Enter saving transaction details' }}</p>
         </div>
       </div>
 
@@ -71,13 +71,13 @@ import { loadBanks, loadSavingTypes } from '../../state/lookups.actions';
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="w-1/2">
-              <mat-label>Bank</mat-label>
-              <mat-select formControlName="bankId">
-                <mat-option *ngFor="let bank of banks$ | async" [value]="bank.id">
-                  {{ bank.name }}
+              <mat-label>Deposit account</mat-label>
+              <mat-select formControlName="accountId">
+                <mat-option *ngFor="let acc of depositAccounts$ | async" [value]="acc.id">
+                  {{ acc.name }} <span class="text-xs opacity-70">({{ acc.accountNumber || 'no #' }})</span>
                 </mat-option>
               </mat-select>
-              <mat-icon matPrefix class="mr-2" style="color:#94a3b8">account_balance</mat-icon>
+              <mat-icon matPrefix class="mr-2" style="color:#94a3b8">account_balance_wallet</mat-icon>
             </mat-form-field>
           </div>
 
@@ -112,7 +112,7 @@ import { loadBanks, loadSavingTypes } from '../../state/lookups.actions';
         <button [disabled]="!savingForm.valid" (click)="submitSaving()"
                 class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
                 style="background:linear-gradient(135deg,#059669,#047857);color:white;box-shadow:0 4px 12px rgba(5,150,105,0.35)">
-          Record Saving
+          {{ editMode ? 'Update Saving' : 'Record Saving' }}
         </button>
       </mat-dialog-actions>
     </div>
@@ -124,31 +124,47 @@ import { loadBanks, loadSavingTypes } from '../../state/lookups.actions';
 export class SavingFormComponent implements OnInit {
   savingForm!: FormGroup;
   members$!: Observable<Member[]>;
-  banks$!: Observable<Bank[]>;
+  /** Active ledger accounts categorized as bank (member deposits). */
+  depositAccounts$!: Observable<Account[]>;
   savingTypes$!: Observable<SavingType[]>;
+  editMode = false;
 
   constructor(
     private store: Store<AppState>,
     private fb: FormBuilder,
-    private dialogRef: MatDialogRef<SavingFormComponent>
+    private dialogRef: MatDialogRef<SavingFormComponent>,
+    @Optional() @Inject(MAT_DIALOG_DATA) public data: { saving?: Saving } | undefined
   ) { }
 
   ngOnInit(): void {
-    this.store.dispatch(loadBanks());
+    this.store.dispatch(loadAccounts({}));
     this.store.dispatch(loadSavingTypes());
 
     this.members$ = this.store.select(selectAllMembers);
-    this.banks$ = this.store.select(selectAllBanks);
+    this.depositAccounts$ = this.store.select(selectAllAccounts).pipe(
+      map((accounts) =>
+        (accounts ?? []).filter(
+          (a) => a.accountCategory === AccountCategory.BANK_ACCOUNT && a.isActive !== false
+        )
+      )
+    );
     this.savingTypes$ = this.store.select(selectAllSavingTypes);
 
+    const saving = this.data?.saving;
+    this.editMode = !!(saving?.id);
+
+    const dateStr = saving?.savingDate
+      ? new Date(saving.savingDate).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
+
     this.savingForm = this.fb.group({
-      memberId: ['', Validators.required],
-      savingType: ['', Validators.required],
-      bankId: ['', Validators.required],
-      savingAmount: ['', [Validators.required, Validators.min(1)]],
-      ftp: ['', Validators.required],
-      remark: [''],
-      savingDate: [new Date().toISOString().split('T')[0], Validators.required],
+      memberId: [saving?.memberId ?? '', Validators.required],
+      savingType: [saving?.savingType ?? '', Validators.required],
+      accountId: [saving?.accountId ?? '', Validators.required],
+      savingAmount: [saving?.savingAmount ?? '', [Validators.required, Validators.min(1)]],
+      ftp: [saving?.ftp ?? '', Validators.required],
+      remark: [saving?.remark ?? ''],
+      savingDate: [dateStr, Validators.required],
     });
   }
 
@@ -156,13 +172,33 @@ export class SavingFormComponent implements OnInit {
     if (this.savingForm.invalid) return;
 
     const formValue = this.savingForm.value;
-    const savingData: Saving = {
-      ...formValue,
-      savingDate: new Date(formValue.savingDate).getTime(),
-      createdAt: Date.now()
-    };
+    const savingDate = new Date(formValue.savingDate).getTime();
 
-    this.store.dispatch(addSaving({ saving: savingData }));
+    if (this.editMode && this.data?.saving?.id) {
+      const base = this.data.saving;
+      const saving: Saving = {
+        ...base,
+        id: base.id,
+        memberId: formValue.memberId,
+        savingType: formValue.savingType,
+        accountId: formValue.accountId,
+        savingAmount: Number(formValue.savingAmount),
+        ftp: formValue.ftp,
+        remark: formValue.remark || undefined,
+        savingDate,
+        createdAt: base.createdAt ?? Date.now(),
+      };
+      this.store.dispatch(updateSaving({ saving }));
+    } else {
+      const savingData: Saving = {
+        ...formValue,
+        savingAmount: Number(formValue.savingAmount),
+        savingDate,
+        createdAt: Date.now()
+      };
+      this.store.dispatch(addSaving({ saving: savingData }));
+    }
+
     this.dialogRef.close(true);
   }
 

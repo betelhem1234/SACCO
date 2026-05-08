@@ -1,5 +1,6 @@
 package com.example.ngrxcrud.api.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -18,12 +19,27 @@ public class Saving {
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.UUID)
     private java.util.UUID id;
 
+    @Column(name = "member_id", nullable = false)
     private java.util.UUID memberId;
+
+    @Column(name = "saving_amount", nullable = false)
     private Double savingAmount;
+
+    @Column(name = "saving_date", nullable = false)
     private Long savingDate;
+
+    @Column(name = "ftp", nullable = false)
     private String ftp;
+
+    @Column(name = "saving_type", nullable = false)
     private java.util.UUID savingType;
-    private java.util.UUID bankId;
+
+    @Column(name = "account_id", nullable = false)
+    private java.util.UUID accountId;
+
+    @Column(name = "remark")
     private String remark;
+
+    @Column(name = "created_at", nullable = false)
     private Long createdAt;
 }

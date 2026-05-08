@@ -3,6 +3,7 @@ import { Saving } from '@sacco/shared-models';
 import {
     loadSavings, loadSavingsSuccess, loadSavingsFailure,
     addSaving, addSavingSuccess, addSavingFailure,
+    updateSaving, updateSavingSuccess, updateSavingFailure,
     deleteSaving, deleteSavingSuccess, deleteSavingFailure
 } from './savings.actions';
 
@@ -41,6 +42,17 @@ export const savingReducer = createReducer(
         status: 'success' as const
     })),
     on(addSavingFailure, (state, { error }) => ({
+        ...state,
+        errorMessage: error,
+        status: 'error' as const
+    })),
+    on(updateSaving, (state) => ({ ...state, status: 'loading' as const })),
+    on(updateSavingSuccess, (state, { saving }) => ({
+        ...state,
+        savings: state.savings.map((s) => (s.id === saving.id ? saving : s)),
+        status: 'success' as const
+    })),
+    on(updateSavingFailure, (state, { error }) => ({
         ...state,
         errorMessage: error,
         status: 'error' as const

@@ -4,6 +4,7 @@ import { Store } from '@ngrx/store';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { loadMembers } from './state/members.actions';
 import { loadSavings } from './state/savings.actions';
+import { loadAccounts, loadSavingTypes } from './state/lookups.actions';
 
 @Component({
   selector: 'app-root',
@@ -18,5 +19,7 @@ export class App implements OnInit {
   ngOnInit() {
     this.store.dispatch(loadMembers());
     this.store.dispatch(loadSavings());
+    this.store.dispatch(loadAccounts({}));
+    this.store.dispatch(loadSavingTypes());
   }
 }

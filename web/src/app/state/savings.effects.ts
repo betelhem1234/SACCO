@@ -4,9 +4,11 @@ import { of } from 'rxjs';
 import { map, mergeMap, catchError, tap, switchMap } from 'rxjs/operators';
 import { Saving } from '@sacco/shared-models';
 import { ApiService } from '../services/api.service';
+import { httpErrorMessage } from '../utils/http-error-message';
 import {
     loadSavings, loadSavingsSuccess, loadSavingsFailure,
     addSaving, addSavingSuccess, addSavingFailure,
+    updateSaving, updateSavingSuccess, updateSavingFailure,
     deleteSaving, deleteSavingSuccess, deleteSavingFailure
 } from './savings.actions';
 
@@ -42,6 +44,26 @@ export class SavingsEffects {
                     })
                 )
             )
+        )
+    );
+
+    updateSaving$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(updateSaving),
+            mergeMap((action) => {
+                const id = action.saving.id;
+                if (!id) {
+                    return of(updateSavingFailure({ error: new Error('Missing saving id') }));
+                }
+                return this.apiService.updateSaving(id, action.saving).pipe(
+                    map((saving: Saving) => updateSavingSuccess({ saving })),
+                    tap(() => window.alert('Saving updated successfully')),
+                    catchError((error) => {
+                        window.alert(httpErrorMessage(error, 'Failed to update saving.'));
+                        return of(updateSavingFailure({ error }));
+                    })
+                );
+            })
         )
     );
 

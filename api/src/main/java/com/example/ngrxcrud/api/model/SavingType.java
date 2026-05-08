@@ -20,5 +20,6 @@ public class SavingType {
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.UUID)
     private java.util.UUID id;
     private String name;
+    private java.util.UUID accountId;
     private String description;
 }

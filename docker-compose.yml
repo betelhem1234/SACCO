@@ -6,7 +6,7 @@ services:
       - "5433:5432"
     environment:
       POSTGRES_DB: ngrx
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     volumes:
       - sacco-db-data:/var/lib/postgresql/data
     networks:
@@ -30,7 +30,8 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ngrx
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-vZ3xK8pT9mQ2sL6nR4wY7bC1dF5hJ0gAeXuIiOoPpAaSsDdFfGgHhJjKkLlZzXxCcVvBbNnMmQq}
     networks:
       - app-network
       - dev-gateway

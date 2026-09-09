@@ -6,10 +6,13 @@ import com.example.ngrxcrud.api.model.User;
 import com.example.ngrxcrud.api.security.JwtUtil;
 import com.example.ngrxcrud.api.security.UserDetailsImpl;
 import com.example.ngrxcrud.api.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -60,9 +65,12 @@ public class AuthService {
                     userDetails.getUsername(),
                     userDetails.getEmail(),
                     roles);
-        } catch (Exception e) {
+        } catch (AuthenticationException e) {
             userService.incrementFailedLogin(user);
             throw new RuntimeException("Bad credentials");
+        } catch (Exception e) {
+            log.error("Unexpected error during login for {}", loginRequest.getEmail(), e);
+            throw new RuntimeException("Unexpected error during login");
         }
     }
 }

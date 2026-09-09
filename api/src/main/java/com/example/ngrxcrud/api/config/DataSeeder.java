@@ -17,6 +17,8 @@ public class DataSeeder {
                                    RegionRepository regionRepository, SubcityRepository subcityRepository,
                                    EducationRepository educationRepository,
                                    BranchRepository branchRepository,
+                                   SavingTypeRepository savingTypeRepository,
+                                   SettingRepository settingRepository,
                                    PasswordEncoder passwordEncoder) {
         return args -> {
             // Seed Admin Role
@@ -90,6 +92,45 @@ public class DataSeeder {
                 educationRepository.save(new Education(null, "Master's degree", "Postgraduate degree"));
                 educationRepository.save(new Education(null, "Doctorate (PhD)", "Doctoral degree"));
                 System.out.println("Seeded education levels");
+            }
+
+// Seed Saving Types (let the DB assign IDs, then point settings at the
+            // mandatory type so no hard-coded UUIDs are needed)
+            if (savingTypeRepository.count() == 0) {
+                savingTypeRepository.save(new SavingType(null, "Monthly Mandatory Saving", null,
+                        "Required monthly saving", true, 300.0));
+                savingTypeRepository.save(new SavingType(null, "Monthly", null,
+                        "General monthly saving", false, 0.0));
+                savingTypeRepository.save(new SavingType(null, "voluntary saving", null,
+                        "Voluntary saving", false, 50.0));
+                System.out.println("Seeded saving types");
+            }
+
+            // Seed Settings (only the ones that are safe on a fresh DB; account-level
+            // settings like registration_fee_account_id must be configured after the
+            // chart of accounts exists)
+            if (settingRepository.count() == 0) {
+                UUID mandatoryId = savingTypeRepository.findAll().stream()
+                        .filter(SavingType::getIsMandatory)
+                        .findFirst()
+                        .map(SavingType::getId)
+                        .orElseThrow(() -> new IllegalStateException("Mandatory saving type is not seeded"));
+                settingRepository.save(new Setting(null, "mandatory_overflow_to_voluntary", "true", null));
+                settingRepository.save(new Setting(null, "mandatory_partial_payment", "true", null));
+                settingRepository.save(new Setting(null, "mandatory_saving_type_id", mandatoryId.toString(), null));
+                settingRepository.save(new Setting(null, "saving_requires_approval", "true", null));
+                settingRepository.save(new Setting(null, "maximum_share_unit", "1000", null));
+                settingRepository.save(new Setting(null, "minimum_share_unit", "1", null));
+                settingRepository.save(new Setting(null, "primary_color", "#122045", null));
+                settingRepository.save(new Setting(null, "secondary_color", "#6388bf", null));
+                settingRepository.save(new Setting(null, "tertiary_color", "#f73b6a", null));
+                settingRepository.save(new Setting(null, "registration_fee", "500", null));
+                settingRepository.save(new Setting(null, "share_unit_price", "1000", null));
+                settingRepository.save(new Setting(null, "share_requires_approval", "true", null));
+                settingRepository.save(new Setting(null, "withdrawal_interval_days", "15", null));
+                settingRepository.save(new Setting(null, "withdrawal_limit", "10000", null));
+                settingRepository.save(new Setting(null, "withdrawal_requires_approval", "true", null));
+                System.out.println("Seeded settings");
             }
         };
     }

@@ -1,7 +1,6 @@
 package com.example.ngrxcrud.api.security;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -9,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
 @Component
@@ -20,10 +21,15 @@ public class JwtUtil {
     private int jwtExpirationMs;
 
     public JwtUtil(@Value("${app.jwtSecret:not-set-secret-not-set-secret-not-set-secret}") String jwtSecret) {
-        byte[] keyBytes = jwtSecret.length() >= 64
-                ? jwtSecret.getBytes(StandardCharsets.UTF_8)
-                : Decoders.BASE64.decode("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-        this.jwtSecretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.jwtSecretKey = Keys.hmacShaKeyFor(sha512(jwtSecret.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static byte[] sha512(byte[] input) {
+        try {
+            return MessageDigest.getInstance("SHA-512").digest(input);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-512 not available", e);
+        }
     }
 
     public String generateJwtToken(Authentication authentication) {

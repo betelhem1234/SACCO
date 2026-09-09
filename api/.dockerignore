@@ -1,8 +1,10 @@
-# target is intentionally NOT ignored: the Dockerfile is run-only and copies
-# the locally built jar (target/*.jar) since the build container lacks Maven network.
+# The image now builds itself, so the local target/ must NOT be sent
+target/
 .mvn
 mvnw
 mvnw.cmd
 .git
 .vscode
+.idea
+*.iml
 HELP.md

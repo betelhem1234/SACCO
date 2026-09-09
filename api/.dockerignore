@@ -1,4 +1,5 @@
-target
+# target is intentionally NOT ignored: the Dockerfile is run-only and copies
+# the locally built jar (target/*.jar) since the build container lacks Maven network.
 .mvn
 mvnw
 mvnw.cmd

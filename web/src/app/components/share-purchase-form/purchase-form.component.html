@@ -1,0 +1,81 @@
+<div class="p-6">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+      <mat-icon style="color:white;font-size:20px">shopping_cart</mat-icon>
+    </div>
+    <div>
+      <h2 class="text-lg font-bold" style="color:#1e293b">{{ isEdit ? 'Edit' : 'New' }} Share Purchase</h2>
+      <p class="text-xs" style="color:#64748b">Record a member's share purchase</p>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Member</mat-label>
+      <mat-select formControlName="memberId" required>
+        <mat-option *ngFor="let m of members" [value]="m.id">
+          {{ m.fullName }} ({{ m.idNumbe || m.memberid }})
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Amount Paid (share + fee)</mat-label>
+      <input matInput type="number" formControlName="totalAmount" required placeholder="0.00" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Share Units</mat-label>
+      <input matInput type="number" formControlName="units" readonly />
+      <span matSuffix class="text-xs mr-2" style="color:#64748b">x {{ shareUnitPrice }} = {{ calculatedUnits }}</span>
+    </mat-form-field>
+
+    <div class="flex items-center gap-2 text-sm px-1" style="color:#64748b">
+      <mat-icon style="font-size:16px;width:16px;height:16px">info</mat-icon>
+      <span>Unit price: {{ shareUnitPrice | number:'1.2-2' }} &middot; Min: {{ minUnits }} &middot; Max: {{ maxUnits }}</span>
+    </div>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Service Fee (Registration)</mat-label>
+      <input matInput type="number" formControlName="serviceFee" readonly />
+    </mat-form-field>
+
+    <div class="flex items-center justify-between px-1 py-2">
+      <span class="text-sm font-medium" style="color:#475569">Total Amount Received</span>
+      <span class="text-lg font-bold" style="color:#059669">{{ totalPaid | number:'1.2-2' }}</span>
+    </div>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Purchase Date</mat-label>
+      <input matInput [matDatepicker]="picker" formControlName="purchaseDate" required />
+      <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Bank Account</mat-label>
+      <mat-select formControlName="bankId">
+        <mat-option [value]="null">None</mat-option>
+        <mat-option *ngFor="let a of banks" [value]="a.id">{{ a.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Transaction Reference</mat-label>
+      <input matInput formControlName="transactionReference" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-full">
+      <mat-label>Remark</mat-label>
+      <textarea matInput formControlName="remark" rows="2"></textarea>
+    </mat-form-field>
+
+    <div class="flex justify-end gap-3 pt-2">
+      <button type="button" mat-stroked-button (click)="dialogRef.close()">Cancel</button>
+      <button type="submit" mat-raised-button color="primary" [disabled]="form.invalid"
+              style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669));color:white">
+        {{ isEdit ? 'Update' : 'Save' }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,40 @@
+:host { display: block; height: 100%; }
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.06) !important;
+  color: #ffffff !important;
+}
+.nav-item:hover .nav-icon {
+  background: color-mix(in srgb, var(--accent,#10b981) 15%, transparent) !important;
+  color: var(--accent,#10b981) !important;
+}
+.nav-item:hover mat-icon {
+  color: var(--accent,#10b981) !important;
+}
+
+.nav-active {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent,#10b981) 18%, transparent), color-mix(in srgb, var(--accent-dark,#059669) 12%, transparent)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent,#10b981) 25%, transparent);
+}
+.nav-active .nav-icon {
+  background: linear-gradient(135deg, var(--accent,#10b981), var(--accent-dark,#059669)) !important;
+}
+.nav-active mat-icon {
+  color: #ffffff !important;
+}
+mat-icon { color: inherit; }
+
+.nav-item-sub:hover {
+  background: rgba(255,255,255,0.06) !important;
+  color: #ffffff !important;
+}
+.nav-item-sub.nav-active {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent,#10b981) 14%, transparent), color-mix(in srgb, var(--accent-dark,#059669) 8%, transparent)) !important;
+  color: #ffffff !important;
+  box-shadow: none;
+}
+.nav-item-sub.nav-active > span:first-child {
+  background: var(--accent,#10b981) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.4);
+}

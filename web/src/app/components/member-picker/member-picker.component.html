@@ -1,0 +1,65 @@
+<div>
+  <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">person_search</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">Select Member</h2>
+      <p class="text-xs m-0" style="color:#93c5fd">{{ data?.title || 'Choose a member from the list' }}</p>
+    </div>
+  </div>
+  <mat-dialog-content class="px-6 py-5">
+    <mat-form-field appearance="outline" class="w-full mb-4">
+      <mat-label>Search members</mat-label>
+      <input matInput [formControl]="searchCtrl" placeholder="Type name, phone, or email..." />
+    </mat-form-field>
+
+    <div *ngIf="loading" class="flex justify-center py-8">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+
+    <div *ngIf="!loading && filteredMembers.length === 0" class="text-center py-8" style="color:#94a3b8">
+      No members found
+    </div>
+
+    <div *ngIf="!loading && filteredMembers.length > 0" class="max-h-80 overflow-auto">
+      <table mat-table [dataSource]="dataSource" class="w-full">
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef class="w-12"></th>
+          <td mat-cell *matCellDef="let m" class="w-12">
+            <mat-radio-button [checked]="selectedId === m.id"
+                              (click)="selectedId = m.id; selectedMember = m"></mat-radio-button>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Full Name</th>
+          <td mat-cell *matCellDef="let m">
+            {{ m.fullName }}
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>Phone</th>
+          <td mat-cell *matCellDef="let m">{{ m.telephone || '-' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="memberid">
+          <th mat-header-cell *matHeaderCellDef>ID</th>
+          <td mat-cell *matCellDef="let m">{{ m.memberid || m.idNumbe || '-' }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+            (click)="selectedId = row.id; selectedMember = row"
+            style="cursor:pointer"
+            [style.background]="selectedId === row.id ? '#eff6ff' : ''">
+        </tr>
+      </table>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button [disabled]="!selectedMember" (click)="select()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white;box-shadow:0 4px 12px rgba(30,58,95,0.3)">
+      Select
+    </button>
+  </mat-dialog-actions>
+</div>

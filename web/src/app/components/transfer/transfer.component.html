@@ -1,0 +1,145 @@
+<section class="p-6" style="background:#f0f4f8;min-height:100%">
+  <div class="max-w-full mx-auto">
+
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#0891b2,#065f73)">
+          <mat-icon style="color:white;font-size:20px">swap_horiz</mat-icon>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold" style="color:#1e293b">Transfer Management</h1>
+          <p class="text-xs" style="color:#64748b">Manage saving and share transfers between members</p>
+        </div>
+      </div>
+    </div>
+
+    <mat-tab-group>
+      <!-- Saving Transfer Tab -->
+      <mat-tab label="Saving Transfer">
+        <ng-template matTabContent>
+          <div class="bg-white rounded-2xl shadow-sm border mt-4 overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0">
+            <div class="flex justify-end pt-4 pr-4">
+              <button (click)="onAddSavingTransfer()"
+                      class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer text-white"
+                      style="background:linear-gradient(135deg,#0891b2,#065f73)">
+                <mat-icon style="font-size:18px;width:18px;height:18px">add</mat-icon> New Transfer
+              </button>
+            </div>
+
+            <table mat-table [dataSource]="savingDataSource" class="w-full">
+              <ng-container matColumnDef="sourceMember">
+                <th mat-header-cell *matHeaderCellDef class="pl-6">Source Member</th>
+                <td mat-cell *matCellDef="let row" class="pl-6 font-medium">{{ row.sourceMemberName }}</td>
+              </ng-container>
+              <ng-container matColumnDef="sourceType">
+                <th mat-header-cell *matHeaderCellDef>Source Type</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">{{ row.sourceSavingTypeName }}</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="destMember">
+                <th mat-header-cell *matHeaderCellDef>Destination Member</th>
+                <td mat-cell *matCellDef="let row" class="font-medium">{{ row.destMemberName }}</td>
+              </ng-container>
+              <ng-container matColumnDef="destType">
+                <th mat-header-cell *matHeaderCellDef>Destination Type</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">{{ row.destSavingTypeName }}</span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Amount (ETB)</th>
+                <td mat-cell *matCellDef="let row"><span class="font-semibold" style="color:#0891b2">{{ row.amount | number:'1.2-2' }}</span></td>
+              </ng-container>
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.date | date:'yyyy-MM-dd' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                  <button mat-icon-button matTooltip="Delete" (click)="deleteSavingTransfer(row)" class="!w-8 !h-8" style="color:#ef4444">
+                    <mat-icon style="font-size:18px">delete_outline</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="savingColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: savingColumns;"></tr>
+            </table>
+
+            <mat-paginator #savingPaginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                           [pageSize]="10" [length]="savingDataSource.data.length"
+                           [style.display]="savingDataSource.data.length > 0 ? '' : 'none'">
+            </mat-paginator>
+
+            <div *ngIf="savingDataSource.data.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+              <mat-icon style="font-size:48px;width:48px;height:48px;color:#cbd5e1">swap_horiz</mat-icon>
+              <p class="font-medium mt-3" style="color:#64748b">No saving transfers recorded yet</p>
+            </div>
+          </div>
+        </ng-template>
+      </mat-tab>
+
+      <!-- Share Transfer Tab -->
+      <mat-tab label="Share Transfer">
+        <ng-template matTabContent>
+          <div class="bg-white rounded-2xl shadow-sm border mt-4 overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0">
+            <div class="flex justify-end pt-4 pr-4">
+              <button (click)="onAddShareTransfer()"
+                      class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer text-white"
+                      style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
+                <mat-icon style="font-size:18px;width:18px;height:18px">add</mat-icon> New Transfer
+              </button>
+            </div>
+
+            <table mat-table [dataSource]="shareDataSource" class="w-full">
+              <ng-container matColumnDef="sourceMember">
+                <th mat-header-cell *matHeaderCellDef class="pl-6">Source Member</th>
+                <td mat-cell *matCellDef="let row" class="pl-6 font-medium">{{ row.sourceMemberName }}</td>
+              </ng-container>
+              <ng-container matColumnDef="destMember">
+                <th mat-header-cell *matHeaderCellDef>Destination Member</th>
+                <td mat-cell *matCellDef="let row" class="font-medium">{{ row.destMemberName }}</td>
+              </ng-container>
+              <ng-container matColumnDef="units">
+                <th mat-header-cell *matHeaderCellDef>Units</th>
+                <td mat-cell *matCellDef="let row">{{ row.units }}</td>
+              </ng-container>
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>Amount (ETB)</th>
+                <td mat-cell *matCellDef="let row"><span class="font-semibold" style="color:#8b5cf6">{{ row.totalAmount | number:'1.2-2' }}</span></td>
+              </ng-container>
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let row">{{ row.transferDate | date:'yyyy-MM-dd' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                  <button mat-icon-button matTooltip="Delete" (click)="deleteShareTransfer(row)" class="!w-8 !h-8" style="color:#ef4444">
+                    <mat-icon style="font-size:18px">delete_outline</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="shareColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: shareColumns;"></tr>
+            </table>
+
+            <mat-paginator #sharePaginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                           [pageSize]="10" [length]="shareDataSource.data.length"
+                           [style.display]="shareDataSource.data.length > 0 ? '' : 'none'">
+            </mat-paginator>
+
+            <div *ngIf="shareDataSource.data.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+              <mat-icon style="font-size:48px;width:48px;height:48px;color:#cbd5e1">precision_manufacturing</mat-icon>
+              <p class="font-medium mt-3" style="color:#64748b">No share transfers recorded yet</p>
+            </div>
+          </div>
+        </ng-template>
+      </mat-tab>
+    </mat-tab-group>
+
+  </div>
+</section>

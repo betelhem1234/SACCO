@@ -1,0 +1,219 @@
+<div class="p-8 max-w-4xl mx-auto">
+  <div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-800">System Settings</h1>
+    <p class="text-gray-500 mt-1">Configure the system branding, share settings, and more.</p>
+  </div>
+
+  <mat-tab-group (selectedTabChange)="onTabChange($event)">
+    <mat-tab label="General Settings">
+      <ng-template matTabContent>
+        <form [formGroup]="generalForm" (ngSubmit)="saveGeneral()" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-4 space-y-6">
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Company Name</label>
+            <input formControlName="company_name" type="text" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="My SACCO">
+          </div>
+
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Logo</label>
+            <div class="flex flex-wrap items-center gap-6">
+              <div class="w-48 h-48 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50" *ngIf="!logoPreview; else logoPreviewBlock">
+                <mat-icon style="color:#94a3b8;font-size:56px">image</mat-icon>
+              </div>
+              <ng-template #logoPreviewBlock>
+                <div class="w-48 h-48 rounded-full border border-gray-200 overflow-hidden flex items-center justify-center bg-white p-4">
+                  <img [src]="logoPreview" class="max-w-full max-h-full object-contain" />
+                </div>
+              </ng-template>
+              <div class="flex flex-col gap-2">
+                <label class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer text-sm font-medium text-gray-700 transition text-center">
+                  Choose File
+                  <input type="file" accept="image/*" (change)="onLogoSelected($event)" class="hidden" />
+                </label>
+                <button *ngIf="logoPreview" type="button" (click)="removeLogo()" class="text-xs text-red-500 hover:text-red-700 text-left">Remove</button>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Upload PNG, JPG, or SVG (max 2MB)</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Primary Color</label>
+              <div class="flex gap-2 items-center">
+                <input formControlName="primary_color" type="color" class="w-10 h-10 p-0.5 border border-gray-200 rounded cursor-pointer">
+                <input formControlName="primary_color" type="text" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm" placeholder="#1e3a5f">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Secondary Color</label>
+              <div class="flex gap-2 items-center">
+                <input formControlName="secondary_color" type="color" class="w-10 h-10 p-0.5 border border-gray-200 rounded cursor-pointer">
+                <input formControlName="secondary_color" type="text" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm" placeholder="#10b981">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Tertiary Color</label>
+              <div class="flex gap-2 items-center">
+                <input formControlName="tertiary_color" type="color" class="w-10 h-10 p-0.5 border border-gray-200 rounded cursor-pointer">
+                <input formControlName="tertiary_color" type="text" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm" placeholder="#3b82f6">
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-gray-100">
+            <button type="submit" mat-raised-button color="primary" class="px-8 py-2.5 rounded-lg font-semibold text-white transition" style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669))">
+              Save General Settings
+            </button>
+          </div>
+        </form>
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab label="Share Settings">
+      <ng-template matTabContent>
+        <form [formGroup]="shareForm" (ngSubmit)="saveShare()" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-4 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Share Unit Price</label>
+              <input formControlName="share_unit_price" type="number" step="0.01" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="100">
+              <p class="text-xs text-gray-400 mt-1">Price per single share unit</p>
+            </div>
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Registration Fee Amount</label>
+              <input formControlName="registration_fee" type="number" step="0.01" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0">
+              <p class="text-xs text-gray-400 mt-1">One-time registration fee for new members</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Minimum Share Unit</label>
+              <input formControlName="minimum_share_unit" type="number" step="1" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1">
+              <p class="text-xs text-gray-400 mt-1">Minimum units a member must purchase</p>
+            </div>
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Maximum Share Unit</label>
+              <input formControlName="maximum_share_unit" type="number" step="1" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1000">
+              <p class="text-xs text-gray-400 mt-1">Maximum units a member can purchase</p>
+            </div>
+          </div>
+
+          <mat-divider class="my-4"></mat-divider>
+          <p class="text-sm font-semibold text-gray-700 mb-3">Journal Entry Accounts</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Share Purchase Account</label>
+                <mat-select formControlName="share_purchase_account_id" class="w-full">
+                <mat-option value="">Select account</mat-option>
+                <mat-option *ngFor="let a of equityAccounts" [value]="a.id">{{ a.name }} {{ a.accountNumber ? '('+a.accountNumber+')' : '' }}</mat-option>
+              </mat-select>
+              <p class="text-xs text-gray-400 mt-1">Account credited for share purchases (equity)</p>
+            </div>
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Registration Fee Account</label>
+                <mat-select formControlName="registration_fee_account_id" class="w-full">
+                <mat-option value="">Select account</mat-option>
+                <mat-option *ngFor="let a of revenueAccounts" [value]="a.id">{{ a.name }} {{ a.accountNumber ? '('+a.accountNumber+')' : '' }}</mat-option>
+              </mat-select>
+              <p class="text-xs text-gray-400 mt-1">Account credited for registration fees (revenue)</p>
+            </div>
+          </div>
+           <div class="flex items-center justify-between gap-6">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Require Approval for Shares</label>
+              <p class="text-xs text-gray-400">
+                When enabled, new shares start as <strong>PENDING</strong> and are only posted to the
+                ledger after an approver approves them. When disabled, shares are posted immediately.
+              </p>
+            </div>
+            <mat-slide-toggle formControlName="share_requires_approval" color="primary"></mat-slide-toggle>
+          </div>
+
+
+          <div class="pt-4 border-t border-gray-100">
+            <button type="submit" mat-raised-button color="primary" class="px-8 py-2.5 rounded-lg font-semibold text-white transition" style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669))">
+              Save Share Settings
+            </button>
+          </div>
+        </form>
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab label="Saving Settings">
+      <ng-template matTabContent>
+        <form [formGroup]="savingForm" (ngSubmit)="saveSaving()" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-4 space-y-6">
+          <div class="flex items-center justify-between gap-6">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Require Approval for Savings</label>
+              <p class="text-xs text-gray-400">
+                When enabled, new savings start as <strong>PENDING</strong> and are only posted to the
+                ledger after an approver approves them. When disabled, savings are posted immediately.
+              </p>
+            </div>
+            <mat-slide-toggle formControlName="saving_requires_approval" color="primary"></mat-slide-toggle>
+          </div>
+
+          <div class="flex items-center justify-between gap-6 pt-4 border-t border-gray-100">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Allow partial mandatory payments</label>
+              <p class="text-xs text-gray-400">
+                When enabled, members may pay any amount toward the monthly mandatory minimum (status stays PARTIAL until fully covered). When disabled, each payment must fully cover the oldest unpaid month.
+              </p>
+            </div>
+            <mat-slide-toggle formControlName="mandatory_partial_payment" color="primary"></mat-slide-toggle>
+          </div>
+
+          <div class="flex items-center justify-between gap-6 pt-4 border-t border-gray-100">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Auto-sweep overflow to voluntary</label>
+              <p class="text-xs text-gray-400">
+                When a mandatory payment exceeds the remaining mandatory balance, the surplus is automatically recorded as a voluntary saving so no money is lost.
+              </p>
+            </div>
+            <mat-slide-toggle formControlName="mandatory_overflow_to_voluntary" color="primary"></mat-slide-toggle>
+          </div>
+
+          <div class="pt-4 border-t border-gray-100">
+            <button type="submit" mat-raised-button color="primary" class="px-8 py-2.5 rounded-lg font-semibold text-white transition" style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669))">
+              Save Saving Settings
+            </button>
+          </div>
+        </form>
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab label="Withdrawal Settings">
+      <ng-template matTabContent>
+        <form [formGroup]="withdrawalForm" (ngSubmit)="saveWithdrawal()" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-4 space-y-6">
+          <div class="flex items-center justify-between gap-6">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Require Approval for Withdrawals</label>
+              <p class="text-xs text-gray-400">
+                When enabled, new withdrawals start as <strong>PENDING</strong> and are only posted to the
+                ledger after an approver approves them. When disabled, withdrawals are posted immediately.
+              </p>
+            </div>
+            <mat-slide-toggle formControlName="withdrawal_requires_approval" color="primary"></mat-slide-toggle>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Withdrawal Limit (ETB)</label>
+              <input formControlName="withdrawal_limit" type="number" step="0.01" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0">
+              <p class="text-xs text-gray-400 mt-1">Maximum amount allowed for a single withdrawal. Set <b>0</b> for unlimited.</p>
+            </div>
+            <div class="form-group">
+              <label class="block text-sm font-semibold text-gray-700 mb-1.5">Withdrawal Interval (days)</label>
+              <input formControlName="withdrawal_interval_days" type="number" step="1" min="0" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0">
+              <p class="text-xs text-gray-400 mt-1">Minimum days a member must wait between consecutive withdrawals. Set <b>0</b> for no limit.</p>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-gray-100">
+            <button type="submit" mat-raised-button color="primary" class="px-8 py-2.5 rounded-lg font-semibold text-white transition" style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669))">
+              Save Withdrawal Settings
+            </button>
+          </div>
+        </form>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+</div>

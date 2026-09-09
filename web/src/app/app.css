@@ -1,0 +1,22 @@
+.app-sidebar-drawer {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 1023px) {
+  .app-sidebar-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .app-sidebar-drawer.open {
+    transform: translateX(0);
+  }
+}

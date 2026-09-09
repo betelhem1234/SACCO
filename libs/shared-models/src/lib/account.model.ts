@@ -24,6 +24,7 @@ export interface Account {
   isActive?: boolean;
   isParent?: boolean;
   accountCategory: AccountCategory;
+  classificationId?: string;
 }
 
 export const ACCOUNT_TYPE_OPTIONS: { value: AccountType; label: string }[] = [

@@ -1,0 +1,218 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
+      <span class="material-icons text-white" style="font-size:20px">account_balance</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Balance Sheet</h1>
+      <p class="text-xs" style="color:#64748b">As of {{ periodLabel(presetId) }} · Assets = Liabilities + Equity</p>
+    </div>
+    <mat-form-field appearance="outline" class="min-w-[190px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ periodLabel(presetId) }}</span>
+  </p>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <div class="xl:col-span-2 space-y-5">
+      <!-- Assets -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#eff6ff;border-bottom:1px solid #dbeafe">
+          <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#1e40af">Assets</h2>
+          <span class="fin-section-badge" style="background:#dbeafe;color:#1e40af">{{ report.assets.length }} account(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Number</th>
+                <th class="fin-text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of report.assets">
+                <td>
+                  <a *ngIf="row.accountId; else noLink"
+                     [routerLink]="['/finance/account-ledger', row.accountId]"
+                     [queryParams]="ledgerParams()"
+                     class="no-underline hover:underline font-medium"
+                     style="color:#1e40af;cursor:pointer">{{ row.accountName }}</a>
+                  <ng-template #noLink>
+                    <span class="font-medium" style="color:#1e293b">{{ row.accountName }}</span>
+                  </ng-template>
+                </td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ row.accountNumber || '—' }}</td>
+                <td class="fin-numeric font-semibold" style="color:#1e40af">{{ etb(row.amount) }}</td>
+              </tr>
+              <tr *ngIf="report.assets.length === 0">
+                <td colspan="3" class="text-center py-6" style="color:#94a3b8">No assets recorded.</td>
+              </tr>
+              <tr class="fin-total-row">
+                <td colspan="2">Total assets</td>
+                <td class="fin-numeric">{{ etb(report.totalAssets) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Liabilities -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#fffbeb;border-bottom:1px solid #fde68a">
+          <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#92400e">Liabilities</h2>
+          <span class="fin-section-badge" style="background:#fef3c7;color:#92400e">{{ report.liabilities.length }} account(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Number</th>
+                <th class="fin-text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of report.liabilities">
+                <td>
+                  <a *ngIf="row.accountId; else noLinkL"
+                     [routerLink]="['/finance/account-ledger', row.accountId]"
+                     [queryParams]="ledgerParams()"
+                     class="no-underline hover:underline font-medium"
+                     style="color:#92400e;cursor:pointer">{{ row.accountName }}</a>
+                  <ng-template #noLinkL>
+                    <span class="font-medium" style="color:#1e293b">{{ row.accountName }}</span>
+                  </ng-template>
+                </td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ row.accountNumber || '—' }}</td>
+                <td class="fin-numeric font-semibold" style="color:#92400e">{{ etb(row.amount) }}</td>
+              </tr>
+              <tr *ngIf="report.liabilities.length === 0">
+                <td colspan="3" class="text-center py-6" style="color:#94a3b8">No liabilities recorded.</td>
+              </tr>
+              <tr class="fin-total-row">
+                <td colspan="2">Total liabilities</td>
+                <td class="fin-numeric">{{ etb(report.totalLiabilities) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Equity -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f5f3ff;border-bottom:1px solid #ddd6fe">
+          <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#5b21b6">Equity</h2>
+          <span class="fin-section-badge" style="background:#ede9fe;color:#5b21b6">{{ report.equity.length }} account(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Number</th>
+                <th class="fin-text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of report.equity">
+                <td>
+                  <a *ngIf="row.accountId; else noLinkE"
+                     [routerLink]="['/finance/account-ledger', row.accountId]"
+                     [queryParams]="ledgerParams()"
+                     class="no-underline hover:underline font-medium"
+                     style="color:#5b21b6;cursor:pointer">{{ row.accountName }}</a>
+                  <ng-template #noLinkE>
+                    <span class="font-medium" style="color:#1e293b">{{ row.accountName }}</span>
+                  </ng-template>
+                  <span *ngIf="row.isRetainedEarnings" class="fin-section-badge ml-2" style="background:#10b981;color:#fff">Retained earnings</span>
+                </td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ row.accountNumber || '—' }}</td>
+                <td class="fin-numeric font-semibold" style="color:#5b21b6">{{ etb(row.amount) }}</td>
+              </tr>
+              <tr *ngIf="report.equity.length === 0">
+                <td colspan="3" class="text-center py-6" style="color:#94a3b8">No equity recorded.</td>
+              </tr>
+              <tr class="fin-total-row">
+                <td colspan="2">Total equity</td>
+                <td class="fin-numeric">{{ etb(report.totalEquity) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equation summary -->
+    <div class="space-y-5">
+      <div class="fin-card p-6" style="background:linear-gradient(160deg,#8b5cf6 0%,#6d28d9 100%)">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:#ede9fe">Total assets</p>
+        <p class="text-3xl font-extrabold text-white">{{ etb(report.totalAssets) }}</p>
+        <p class="text-xs mt-1" style="color:#ddd6fe">Owned by the SACCO</p>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Funded by</h3>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Total liabilities</dt>
+            <dd class="font-semibold" style="color:#92400e">{{ etb(report.totalLiabilities) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Total equity</dt>
+            <dd class="font-semibold" style="color:#5b21b6">{{ etb(report.totalEquity) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Net income</dt>
+            <dd class="font-semibold" style="color:#0f766e">{{ etb(report.netIncome) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Liabilities + Equity</dt>
+            <dd class="font-extrabold" style="color:#0f766e">{{ etb(report.totalLiabilitiesAndEquity) }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Accounting equation</h3>
+        <div class="flex items-center justify-between text-sm font-bold" style="color:#1e3a5f">
+          <span style="color:#1e40af">&#9650; {{ etb(report.totalAssets) }}</span>
+          <span style="color:#94a3b8">=</span>
+          <span style="color:#0f766e">{{ etb(report.totalLiabilitiesAndEquity) }} &#9650;</span>
+        </div>
+        <div class="mt-3 w-full h-2 rounded-full overflow-hidden" style="background:#e2e8f0">
+          <div class="h-full" [style.width.%]="liabilitySharePct(report)" style="background:#f59e0b"></div>
+        </div>
+        <div class="mt-1.5 flex justify-between text-[11px]" style="color:#64748b">
+          <span>Liabilities {{ liabilityShare(report) }}%</span>
+          <span>Equity {{ equityShare(report) }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <div *ngIf="loading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#64748b">Loading balance sheet…</p>
+    </div>
+  </div>
+</ng-template>

@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, Optional } from '@angular/core';
+import { Component, Inject, OnInit, Optional, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { CommonModule } from '@angular/common';
@@ -8,15 +8,18 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { Withdrawal, Member, Account, AccountCategory, SavingType } from '@sacco/shared-models';
+import { Withdrawal, Member, Account, AccountCategory, SavingType, Saving } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { addWithdrawal, updateWithdrawal } from '../../state/withdrawals.actions';
-import { selectAllMembers } from '../../state/members.selectors';
-import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups.selectors';
-import { loadAccounts, loadSavingTypes } from '../../state/lookups.actions';
+import { addWithdrawal, updateWithdrawal } from '../../state/withdrawals/withdrawals.actions';
+import { selectAllMembers } from '../../state/members/members.selectors';
+import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups/lookups.selectors';
+import { loadAccounts, loadSavingTypes } from '../../state/lookups/lookups.actions';
+import { ApiService } from '../../services/api.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
     selector: 'app-withdrawal-form',
@@ -29,111 +32,40 @@ import { loadAccounts, loadSavingTypes } from '../../state/lookups.actions';
         MatButtonModule,
         MatIconModule,
         MatDialogModule,
+        MatSnackBarModule,
         ReactiveFormsModule
     ],
-    template: `
-    <div>
-      <!-- Header -->
-      <div class="px-6 py-5 flex items-center gap-3"
-           style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">
-        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
-          <span class="material-icons text-white" style="font-size:20px">payments</span>
-        </div>
-        <div>
-          <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Withdrawal' : 'Record New Withdrawal' }}</h2>
-          <p class="text-xs m-0" style="color:#ddd6fe">{{ editMode ? 'Update withdrawal details' : 'Enter withdrawal transaction details' }}</p>
-        </div>
-      </div>
-
-      <mat-dialog-content class="px-6 py-5">
-        <form [formGroup]="form" class="flex flex-col gap-3">
-
-          <!-- Member -->
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Select Member</mat-label>
-            <mat-select formControlName="memberId" required>
-              <mat-option *ngFor="let m of members$ | async" [value]="m.id">
-                {{ m.fullName }} ({{ m.idNumbe || 'No ID' }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">person</mat-icon>
-          </mat-form-field>
-
-          <!-- Saving Type -->
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Saving Type</mat-label>
-            <mat-select formControlName="savingTypeId" required>
-              <mat-option *ngFor="let st of savingTypes$ | async" [value]="st.id">
-                {{ st.name }}
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">category</mat-icon>
-          </mat-form-field>
-
-          <!-- Amount & FTP row -->
-          <div class="flex gap-3">
-            <mat-form-field appearance="outline" class="w-1/2">
-              <mat-label>Amount (ETB)</mat-label>
-              <input matInput type="number" formControlName="amount" required />
-              <mat-icon matPrefix class="mr-2" style="color:#94a3b8">monetization_on</mat-icon>
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="w-1/2">
-              <mat-label>FTP Reference</mat-label>
-              <input matInput formControlName="ftp" required />
-              <mat-icon matPrefix class="mr-2" style="color:#94a3b8">receipt</mat-icon>
-            </mat-form-field>
-          </div>
-
-          <!-- Credit Bank Account -->
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Credit Bank Account</mat-label>
-            <mat-select formControlName="bankId" required>
-              <mat-option *ngFor="let acc of bankAccounts$ | async" [value]="acc.id">
-                {{ acc.name }} <span class="text-xs opacity-70">({{ acc.accountNumber || 'no #' }})</span>
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">account_balance</mat-icon>
-          </mat-form-field>
-
-          <!-- Date -->
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Date</mat-label>
-            <input matInput type="date" formControlName="date" required />
-          </mat-form-field>
-
-          <!-- Remark -->
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Remark</mat-label>
-            <input matInput formControlName="remark" />
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">notes</mat-icon>
-          </mat-form-field>
-        </form>
-      </mat-dialog-content>
-
-      <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
-        <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
-        <button [disabled]="!form.valid" (click)="submit()"
-                class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
-                style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:white;box-shadow:0 4px 12px rgba(124,58,237,0.35)">
-          {{ editMode ? 'Update Withdrawal' : 'Record Withdrawal' }}
-        </button>
-      </mat-dialog-actions>
-    </div>
-  `,
-    styles: [`mat-dialog-content { min-width: 480px; }`]
+    templateUrl: './withdrawal-form.component.html',
+    styleUrls: ['./withdrawal-form.component.css']
 })
 export class WithdrawalFormComponent implements OnInit {
+    private api = inject(ApiService);
+    private snackBar = inject(MatSnackBar);
+
+    withdrawalLimit: number = 0;
+    withdrawalIntervalDays: number = 0;
+    lastWithdrawalDate: number | null = null;
+
     form!: FormGroup;
     editMode = false;
     members$!: Observable<Member[]>;
     savingTypes$!: Observable<SavingType[]>;
     bankAccounts$!: Observable<Account[]>;
 
+    allSavings: Saving[] = [];
+    availableBalance: number | null = null;
+
+    get balanceColor(): string {
+        if (this.availableBalance === null) return '#64748b';
+        const amount = Number(this.form?.get('amount')?.value) || 0;
+        return amount > this.availableBalance ? '#ef4444' : '#059669';
+    }
+
     constructor(
         private store: Store<AppState>,
         private fb: FormBuilder,
         private dialogRef: MatDialogRef<WithdrawalFormComponent>,
-        @Optional() @Inject(MAT_DIALOG_DATA) public data: { withdrawal?: Withdrawal } | undefined
+        @Optional() @Inject(MAT_DIALOG_DATA) public data: { withdrawal?: Withdrawal; memberId?: string } | undefined
     ) { }
 
     ngOnInit(): void {
@@ -154,7 +86,7 @@ export class WithdrawalFormComponent implements OnInit {
             : new Date().toISOString().split('T')[0];
 
         this.form = this.fb.group({
-            memberId: [w?.memberId ?? '', Validators.required],
+            memberId: [w?.memberId ?? this.data?.memberId ?? '', Validators.required],
             savingTypeId: [w?.savingTypeId ?? '', Validators.required],
             amount: [w?.amount ?? '', [Validators.required, Validators.min(1)]],
             ftp: [w?.ftp ?? '', Validators.required],
@@ -162,11 +94,148 @@ export class WithdrawalFormComponent implements OnInit {
             date: [dateStr, Validators.required],
             remark: [w?.remark ?? ''],
         });
+
+        // Fetch all savings via API for balance calculation
+        this.api.getSavings().subscribe({
+            next: s => {
+                this.allSavings = s ?? [];
+                const memberId = this.form.get('memberId')?.value;
+                const savingTypeId = this.form.get('savingTypeId')?.value;
+                if (memberId && savingTypeId) this.updateBalance(memberId, savingTypeId);
+            },
+            error: () => this.snackBar.open('Failed to load savings data', 'Close', { duration: 3000 }),
+        });
+
+        // Recalculate balance when member or saving type changes
+        this.form.get('memberId')?.valueChanges.subscribe(memberId => {
+            const savingTypeId = this.form.get('savingTypeId')?.value;
+            this.updateBalance(memberId, savingTypeId);
+            this.loadLastWithdrawal();
+        });
+        this.form.get('savingTypeId')?.valueChanges.subscribe(savingTypeId => {
+            const memberId = this.form.get('memberId')?.value;
+            this.updateBalance(memberId, savingTypeId);
+        });
+        // Initial recalculation if both are already set (edit mode)
+        if (w?.memberId && w?.savingTypeId) {
+            this.updateBalance(w.memberId, w.savingTypeId);
+        }
+
+        // Load withdrawal policy settings (limit + interval)
+        this.api.getSettings().subscribe({
+            next: settings => {
+                const limit = Number(settings['withdrawal_limit'] || 0);
+                const interval = Number(settings['withdrawal_interval_days'] || 0);
+                this.withdrawalLimit = limit || 0;
+                this.withdrawalIntervalDays = interval || 0;
+                this.loadLastWithdrawal();
+                this.validateLimit();
+            },
+            error: () => { /* settings unavailable; skip policy checks */ }
+        });
+    }
+
+    private loadLastWithdrawal() {
+        const memberId = this.form.get('memberId')?.value;
+        if (!memberId) {
+            this.lastWithdrawalDate = null;
+            this.validateInterval();
+            return;
+        }
+        this.api.getWithdrawals().subscribe({
+            next: withdrawals => {
+                const last = (withdrawals ?? [])
+                    .filter(w => w.memberId === memberId && w.status !== 'REJECTED')
+                    .sort((a, b) => (b.date ?? 0) - (a.date ?? 0))[0];
+                this.lastWithdrawalDate = last?.date ?? null;
+                this.validateInterval();
+            },
+            error: () => { /* ignore */ }
+        });
+    }
+
+    intervalRemainingDays(): number | null {
+        if (!this.withdrawalIntervalDays || !this.lastWithdrawalDate) return null;
+        const date = this.form.get('date')?.value;
+        if (!date) return null;
+        const target = new Date(date).getTime();
+        const elapsedDays = (target - this.lastWithdrawalDate) / 86_400_000;
+        if (elapsedDays >= this.withdrawalIntervalDays) return 0;
+        return Math.max(0, Math.ceil(this.withdrawalIntervalDays - elapsedDays));
+    }
+
+    overLimit(): boolean {
+        if (!this.withdrawalLimit) return false;
+        return (Number(this.form?.get('amount')?.value) || 0) > this.withdrawalLimit;
+    }
+
+    private validateLimit() {
+        this.form.get('amount')?.valueChanges.subscribe(() => {
+            if (this.overLimit()) {
+                this.snackBar.open(
+                    `Amount exceeds the per-withdrawal limit of ${this.withdrawalLimit.toFixed(2)} ETB`,
+                    'Close', { duration: 4000 }
+                );
+            }
+        });
+    }
+
+    private validateInterval() {
+        this.form.get('date')?.valueChanges.subscribe(() => {
+            const rem = this.intervalRemainingDays();
+            if (rem !== null && rem > 0) {
+                this.snackBar.open(
+                    `Member can withdraw again in ${rem} day(s)`,
+                    'Close', { duration: 4000 }
+                );
+            }
+        });
+    }
+
+    private updateBalance(memberId: string, savingTypeId: string) {
+        if (!memberId || !savingTypeId) {
+            this.availableBalance = null;
+            return;
+        }
+        const total = this.allSavings
+            .filter(s => s.memberId === memberId && s.savingType === savingTypeId)
+            .reduce((sum, s) => sum + (s.savingAmount || 0), 0);
+        this.availableBalance = total;
     }
 
     submit() {
         if (this.form.invalid) return;
         const v = this.form.value;
+        const amount = Number(v.amount);
+
+        // Hard check: reject if balance is known and amount exceeds it
+        if (this.availableBalance !== null && amount > this.availableBalance) {
+            this.snackBar.open(
+                `Insufficient balance. Available: ${this.availableBalance.toFixed(2)} ETB`,
+                'Close', { duration: 5000 }
+            );
+            return;
+        }
+
+        // Enforce per-withdrawal limit
+        if (this.withdrawalLimit && amount > this.withdrawalLimit) {
+            this.snackBar.open(
+                `Amount exceeds the per-withdrawal limit of ${this.withdrawalLimit.toFixed(2)} ETB`,
+                'Close', { duration: 5000 }
+            );
+            return;
+        }
+
+        // Enforce minimum interval between withdrawals
+        const rem = this.intervalRemainingDays();
+        if (rem !== null && rem > 0) {
+            this.snackBar.open(
+                `Member can withdraw again in ${rem} day(s)`,
+                'Close', { duration: 5000 }
+            );
+            return;
+        }
+
         const date = new Date(v.date).getTime();
 
         if (this.editMode && this.data?.withdrawal?.id) {

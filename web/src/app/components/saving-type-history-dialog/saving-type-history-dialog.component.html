@@ -1,0 +1,35 @@
+<h2 mat-dialog-title class="flex items-center gap-2 m-0 pb-0" style="color:#0f172a">
+  <mat-icon style="color:#2563eb">history</mat-icon>
+  {{ data.name }} — amount history
+</h2>
+<mat-dialog-content class="pt-3 mt-0">
+  <ng-container *ngIf="!loading && !error">
+    <table class="w-full text-sm" style="border-collapse:separate;border-spacing:0">
+      <thead>
+        <tr>
+          <th class="text-left px-3 py-2 text-xs font-semibold uppercase" style="color:#64748b;border-bottom:1px solid #e2e8f0">Effective from</th>
+          <th class="text-right px-3 py-2 text-xs font-semibold uppercase" style="color:#64748b;border-bottom:1px solid #e2e8f0">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let h of history">
+          <td class="px-3 py-2" style="border-bottom:1px solid #f1f5f9;color:#334155">{{ fmtDate(h.effectiveFrom) }}</td>
+          <td class="px-3 py-2 text-right font-medium" style="border-bottom:1px solid #f1f5f9;color:#0f172a">{{ etb(h.amount) }}</td>
+        </tr>
+        <tr *ngIf="history.length === 0">
+          <td colspan="2" class="px-3 py-4 text-center" style="color:#94a3b8">No amount changes recorded. A record is created when this type is marked mandatory.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="text-xs m-0 mt-2" style="color:#94a3b8">
+      Members of a mandatory saving type pay the amount in effect on the date of their payment.
+    </p>
+  </ng-container>
+  <div *ngIf="loading" class="flex items-center justify-center gap-2 py-6" style="color:#64748b">
+    <mat-spinner diameter="20" strokeWidth="3"></mat-spinner><span class="text-sm">Loading…</span>
+  </div>
+  <div *ngIf="error" class="text-sm py-4 text-center" style="color:#ef4444">{{ error }}</div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()" class="text-sm">Close</button>
+</mat-dialog-actions>

@@ -40,6 +40,23 @@ public class Saving {
     @Column(name = "remark")
     private String remark;
 
+    @Column(name = "withdrawal_id")
+    private java.util.UUID withdrawalId;
+
+    @Column(name = "transfer_id")
+    private java.util.UUID transferId;
+
     @Column(name = "created_at", nullable = false)
     private Long createdAt;
+
+    // PENDING, POSTED, REJECTED - see SavingStatus state machine
+    @Column(name = "status", nullable = false, length = 20)
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    private SavingStatus status;
+
+    @Column(name = "approved_by")
+    private java.util.UUID approvedBy;
+
+    @Column(name = "approved_at")
+    private Long approvedAt;
 }

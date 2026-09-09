@@ -1,8 +1,10 @@
 package com.example.ngrxcrud.api.controller;
 
 import com.example.ngrxcrud.api.model.SavingType;
+import com.example.ngrxcrud.api.model.SavingTypeAmountHistory;
 import com.example.ngrxcrud.api.repository.SavingRepository;
 import com.example.ngrxcrud.api.repository.SavingTypeRepository;
+import com.example.ngrxcrud.api.service.SavingTypeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,9 @@ public class SavingTypeController {
     @Autowired
     private SavingRepository savingRepository;
 
+    @Autowired
+    private SavingTypeService savingTypeService;
+
     @GetMapping
     public List<SavingType> getAllSavingTypes() {
         return savingTypeRepository.findAll();
@@ -29,13 +34,12 @@ public class SavingTypeController {
 
     @PostMapping
     public SavingType addSavingType(@RequestBody SavingType savingType) {
-        return savingTypeRepository.save(savingType);
+        return savingTypeService.createSavingType(savingType);
     }
 
     @PutMapping("/{id}")
     public SavingType updateSavingType(@PathVariable UUID id, @RequestBody SavingType savingType) {
-        savingType.setId(id);
-        return savingTypeRepository.save(savingType);
+        return savingTypeService.updateSavingType(id, savingType);
     }
 
     @DeleteMapping("/{id}")
@@ -44,6 +48,12 @@ public class SavingTypeController {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cannot delete this saving type: one or more savings records still use it.");
         }
+        savingTypeService.deleteSavingType(id);
         savingTypeRepository.deleteById(id);
+    }
+
+    @GetMapping("/{id}/history")
+    public List<SavingTypeAmountHistory> getSavingTypeHistory(@PathVariable UUID id) {
+        return savingTypeService.getHistory(id);
     }
 }

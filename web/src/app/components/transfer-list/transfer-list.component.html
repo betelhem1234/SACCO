@@ -1,0 +1,99 @@
+<section class="p-6" style="background:#f0f4f8;min-height:100%">
+  <div class="max-w-full mx-auto">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background:linear-gradient(135deg,#0891b2,#065f73)">
+          <span class="material-icons text-white" style="font-size:20px">swap_horiz</span>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold" style="color:#1e293b">Saving Transfers</h1>
+          <p class="text-xs" style="color:#64748b">Transfer savings between members and saving types</p>
+        </div>
+      </div>
+      <button (click)="onAdd()"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer text-white"
+              style="background:linear-gradient(135deg,#0891b2,#065f73)">
+        <span class="material-icons" style="font-size:18px">add</span> New Transfer
+      </button>
+    </div>
+
+    <div class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border" style="border-color:#e2e8f0">
+      <table mat-table [dataSource]="dataSource" class="w-full">
+
+        <ng-container matColumnDef="sourceMember">
+          <th mat-header-cell *matHeaderCellDef class="pl-6">Source Member</th>
+          <td mat-cell *matCellDef="let row" class="pl-6 font-medium">{{ row.sourceMemberName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="sourceType">
+          <th mat-header-cell *matHeaderCellDef>Source Type</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
+              {{ row.sourceSavingTypeName }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="destMember">
+          <th mat-header-cell *matHeaderCellDef>Destination Member</th>
+          <td mat-cell *matCellDef="let row" class="font-medium">{{ row.destMemberName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="destType">
+          <th mat-header-cell *matHeaderCellDef>Destination Type</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
+              {{ row.destSavingTypeName }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="amount">
+          <th mat-header-cell *matHeaderCellDef>Amount (ETB)</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="font-semibold" style="color:#0891b2">{{ row.amount | number:'1.2-2' }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="ftp">
+          <th mat-header-cell *matHeaderCellDef>FTP Ref</th>
+          <td mat-cell *matCellDef="let row">{{ row.ftp }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="date">
+          <th mat-header-cell *matHeaderCellDef>Date</th>
+          <td mat-cell *matCellDef="let row">{{ row.date | date:'yyyy-MM-dd' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+          <td mat-cell *matCellDef="let row" class="text-right pr-6 gap-1">
+            <button mat-icon-button matTooltip="View" (click)="onView(row)" class="!w-8 !h-8" style="color:#059669">
+              <span class="material-icons" style="font-size:18px">visibility</span>
+            </button>
+            <button mat-icon-button matTooltip="Edit" (click)="onEdit(row)" class="!w-8 !h-8" style="color:#0891b2">
+              <span class="material-icons" style="font-size:18px">edit</span>
+            </button>
+            <button mat-icon-button matTooltip="Delete" (click)="onDelete(row)" class="!w-8 !h-8" style="color:#ef4444">
+              <span class="material-icons" style="font-size:18px">delete_outline</span>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <mat-paginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                     [pageSize]="10" [length]="dataSource.data.length"
+                     [style.display]="dataSource.data.length > 0 ? '' : 'none'">
+      </mat-paginator>
+
+      <div *ngIf="dataSource.data.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+        <span class="material-icons mb-3" style="font-size:48px;color:#cbd5e1">swap_horiz</span>
+        <p class="font-medium" style="color:#64748b">No transfers recorded yet</p>
+      </div>
+    </div>
+  </div>
+</section>

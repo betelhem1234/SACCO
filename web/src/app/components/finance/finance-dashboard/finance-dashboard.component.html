@@ -1,0 +1,75 @@
+<div class="fin-page">
+  <!-- Hero -->
+  <div class="rounded-2xl mb-6 overflow-hidden relative"
+       style="background:linear-gradient(135deg,#1e3a5f 0%,#2d5282 55%,#0f766e 100%);min-height:120px">
+    <div class="px-6 lg:px-8 py-6 relative z-10 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:#a7f3d0">Finance</p>
+        <h1 class="text-white text-2xl font-bold mb-1">Financial Reports</h1>
+        <p style="color:#93c5fd;font-size:0.875rem">Trial balance, financial statements and the general ledger</p>
+      </div>
+      <div class="no-print">
+        <mat-form-field appearance="outline" class="min-w-[200px]" subscriptSizing="dynamic"
+                        style="background:rgba(255,255,255,0.08);border-radius:.75rem">
+          <mat-label style="color:#93c5fd">Reporting period</mat-label>
+          <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)"
+                      style="color:white">
+            <mat-option *ngFor="let p of presets" [value]="p.id" style="color:#0f172a">{{ p.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+    <div class="absolute" style="right:-40px;top:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>
+    <div class="absolute" style="right:60px;bottom:-80px;width:220px;height:220px;border-radius:50%;background:rgba(16,185,129,0.14)"></div>
+  </div>
+
+  <!-- Period badge -->
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ periodLabel(presetId) }}</span>
+  </p>
+
+  <!-- KPI cards -->
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+    <div *ngFor="let kpi of kpis" class="fin-card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" [style.background]="kpi.gradient">
+          <span class="material-icons text-white" style="font-size:20px">{{ kpi.icon }}</span>
+        </div>
+        <span *ngIf="kpi.badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              [style.background]="kpi.badgeBg" [style.color]="kpi.badgeColor">{{ kpi.badge }}</span>
+      </div>
+      <p class="text-lg font-extrabold truncate" style="color:#1e293b">{{ kpi.format(kpiValue(summary$ | async, kpi.key)) }}</p>
+      <p class="text-xs mt-0.5" style="color:#64748b">{{ kpi.label }}</p>
+    </div>
+  </div>
+
+  <!-- Report quick links -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <a *ngFor="let r of reports" [routerLink]="r.path"
+       class="fin-card p-6 no-underline block transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+       style="cursor:pointer">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" [style.background]="r.gradient">
+          <span class="material-icons text-white" style="font-size:22px">{{ r.icon }}</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-bold" style="color:#1e293b">{{ r.title }}</h3>
+            <span class="material-icons" style="color:#94a3b8;font-size:20px">arrow_forward</span>
+          </div>
+          <p class="text-xs mt-1" style="color:#64748b">{{ r.subtitle }}</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Loading overlay -->
+  <div *ngIf="loading$ | async"
+       class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+    <div class="bg-white rounded-2xl px-8 py-6 shadow-xl flex flex-col items-center gap-3">
+      <mat-spinner diameter="36"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#1e293b">Calculating financial reports…</p>
+    </div>
+  </div>
+</div>

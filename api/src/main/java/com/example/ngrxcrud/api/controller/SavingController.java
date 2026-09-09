@@ -1,19 +1,15 @@
 package com.example.ngrxcrud.api.controller;
 
 import com.example.ngrxcrud.api.model.Saving;
-import com.example.ngrxcrud.api.model.SavingType;
 import com.example.ngrxcrud.api.repository.SavingRepository;
-import com.example.ngrxcrud.api.repository.SavingTypeRepository;
-import com.example.ngrxcrud.api.service.JournalEntryService;
-
-import jakarta.transaction.Transactional;
+import com.example.ngrxcrud.api.service.SavingService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -24,125 +20,63 @@ public class SavingController {
     @Autowired
     private SavingRepository savingRepository;
     @Autowired
-    private SavingTypeRepository savingTypeRepository;
-    @Autowired
-    private JournalEntryService journalEntryService;
+    private SavingService savingService;
 
     @GetMapping
     public List<Saving> getAllSavings() {
         return savingRepository.findAll();
     }
 
-    // @PostMapping
-    // public Saving addSaving(@RequestBody Saving saving) {
-    // // return savingRepository.save(saving);
-    // // 1. Save saving first
-    // Saving saved = savingRepository.save(saving);
-    // // 2. Get saving type → account_id
-    // SavingType type = savingTypeRepository.findById(saved.getSavingType())
-    // .orElseThrow(() -> new RuntimeException("Saving type not found"));
-
-    // UUID savingAccountId = type.getAccountId();
-    // UUID bankAccountId = saved.getAccountId(); // assuming this is bank
-
-    // // 3. Credit entry (saving account)
-    // JournalEntry credit = new JournalEntry();
-    // credit.setAccountId(savingAccountId);
-    // credit.setTargetId(saved.getId());
-    // credit.setDate(saved.getSavingDate());
-    // credit.setCreatedAt(now);
-    // credit.setIsCredit(true);
-    // credit.setDescription("Saving deposit");
-
-    // // 4. Debit entry (bank account)
-    // JournalEntry debit = new JournalEntry();
-    // debit.setAccountId(bankAccountId);
-    // debit.setTargetId(saved.getId());
-    // debit.setDate(saved.getSavingDate());
-    // debit.setCreatedAt(now);
-    // debit.setIsCredit(false);
-    // debit.setDescription("Saving deposit");
-
-    // // 5. Save both
-    // journalEntryRepository.save(credit);
-    // journalEntryRepository.save(debit);
-
-    // return saved;
-
-    // }
-
     @PostMapping
-    @jakarta.transaction.Transactional
     public Saving addSaving(@RequestBody Saving saving) {
-        Saving saved = savingRepository.save(saving);
+        return savingService.createSaving(saving);
+    }
 
-        SavingType type = savingTypeRepository.findById(saved.getSavingType())
-                .orElseThrow(() -> new RuntimeException("Saving type not found"));
+    /**
+     * Approve a PENDING saving and post it to the ledger.
+     * Body (optional): { "approvedBy": "<uuid>" }
+     */
+    @PostMapping("/{id}/approve")
+    public Saving approveSaving(@PathVariable UUID id, @RequestBody(required = false) Map<String, String> body) {
+        UUID approvedBy = body != null && body.containsKey("approvedBy")
+                ? UUID.fromString(body.get("approvedBy"))
+                : currentUserId();
+        return savingService.approveSaving(id, approvedBy);
+    }
 
-        // DEBIT bank account (cash received)
-        journalEntryService.recordDebitEntry(
-                saved.getAccountId(),
-                saved.getId(),
-                saved.getFtp(),
-                saved.getSavingDate(),
-                "Saving deposit",
-                saved.getSavingAmount());
-
-        // CREDIT saving ledger account (liability increases)
-        journalEntryService.recordCreditEntry(
-                type.getAccountId(),
-                saved.getId(),
-                saved.getFtp(),
-                saved.getSavingDate(),
-                "Saving deposit",
-                saved.getSavingAmount());
-
-        return saved;
+    /**
+     * Reject a PENDING saving. PENDING → REJECTED, no ledger posting.
+     */
+    @PostMapping("/{id}/reject")
+    public Saving rejectSaving(@PathVariable UUID id) {
+        return savingService.rejectSaving(id);
     }
 
     @PutMapping("/{id}")
-    @Transactional
     public Saving updateSaving(@PathVariable UUID id, @RequestBody Saving incoming) {
-        Saving existing = savingRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Saving not found"));
-        existing.setMemberId(incoming.getMemberId());
-        existing.setSavingAmount(incoming.getSavingAmount());
-        existing.setSavingDate(incoming.getSavingDate());
-        existing.setFtp(incoming.getFtp());
-        existing.setSavingType(incoming.getSavingType());
-        existing.setAccountId(incoming.getAccountId());
-        existing.setRemark(incoming.getRemark());
-        Saving saved = savingRepository.save(existing);
-
-        SavingType type = savingTypeRepository.findById(saved.getSavingType())
-                .orElseThrow(() -> new RuntimeException("Saving type not found"));
-
-        // Replace old journal entries with fresh ones reflecting the updated values
-        journalEntryService.deleteEntriesByTargetId(saved.getId());
-
-        journalEntryService.recordDebitEntry(
-                saved.getAccountId(),
-                saved.getId(),
-                saved.getFtp(),
-                saved.getSavingDate(),
-                "Saving deposit",
-                saved.getSavingAmount());
-
-        journalEntryService.recordCreditEntry(
-                type.getAccountId(),
-                saved.getId(),
-                saved.getFtp(),
-                saved.getSavingDate(),
-                "Saving deposit",
-                saved.getSavingAmount());
-
-        return saved;
+        return savingService.updateSaving(id, incoming);
     }
 
     @DeleteMapping("/{id}")
-    @Transactional
-    public void deleteSaving(@PathVariable java.util.UUID id) {
-        journalEntryService.deleteEntriesByTargetId(id);
-        savingRepository.deleteById(id);
+    public void deleteSaving(@PathVariable UUID id) {
+        savingService.deleteSaving(id);
+    }
+
+    /**
+     * Returns the per-month mandatory saving tracker for a member.
+     * Each row: { yearMonth, label, requiredAmount, paidAmount, remaining, status }.
+     */
+    @GetMapping("/{id}/tracker")
+    public List<Map<String, Object>> getTracker(@PathVariable UUID id) {
+        return savingService.getTracker(id);
+    }
+
+    private UUID currentUserId() {
+        Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof com.example.ngrxcrud.api.security.UserDetailsImpl user) {
+            return user.getId();
+        }
+        return null;
     }
 }

@@ -1,0 +1,138 @@
+<div>
+  <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">group_add</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Referral Member' : 'Add Referral Member' }}</h2>
+      <p class="text-xs m-0" style="color:#93c5fd">Fill in referral member details</p>
+    </div>
+  </div>
+  <mat-dialog-content class="px-6 py-5">
+    <form [formGroup]="form" class="flex flex-col gap-4">
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>First Name *</mat-label>
+          <input matInput formControlName="first_name" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Middle Name *</mat-label>
+          <input matInput formControlName="middle_name" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Last Name *</mat-label>
+          <input matInput formControlName="last_name" required />
+        </mat-form-field>
+      </div>
+
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Mother Name</mat-label>
+          <input matInput formControlName="mother_name" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Family Size</mat-label>
+          <input matInput type="number" formControlName="family_size" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Gender *</mat-label>
+          <mat-select formControlName="is_male" required>
+            <mat-option [value]="true">Male</mat-option>
+            <mat-option [value]="false">Female</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Birth Date</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="birth_date" (dateChange)="calculateAge()" />
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Age</mat-label>
+          <input matInput type="number" formControlName="age" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Job Field</mat-label>
+          <mat-select formControlName="job_field">
+            <mat-option value="">Select</mat-option>
+            <mat-option value="Employed">Employed</mat-option>
+            <mat-option value="Self-Employed">Self-Employed</mat-option>
+            <mat-option value="Unemployed">Unemployed</mat-option>
+            <mat-option value="Student">Student</mat-option>
+            <mat-option value="Retired">Retired</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Marital Status</mat-label>
+          <mat-select formControlName="marital_status">
+            <mat-option [value]="0">Single</mat-option>
+            <mat-option [value]="1">Married</mat-option>
+            <mat-option [value]="2">Divorced</mat-option>
+            <mat-option [value]="3">Widowed</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Work Address</mat-label>
+          <input matInput formControlName="work_address" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Fayda ID No</mat-label>
+          <input matInput formControlName="fayda_id_no" />
+        </mat-form-field>
+      </div>
+
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Telephone</mat-label>
+          <input matInput formControlName="telephone" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email" />
+        </mat-form-field>
+      </div>
+
+      <p class="font-semibold text-sm mt-2 mb-1" style="color:#475569">Address</p>
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Region</mat-label>
+          <mat-select formControlName="state_id">
+            <mat-option value="">Select</mat-option>
+            <mat-option *ngFor="let r of regions" [value]="r.id">{{ r.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Subcity</mat-label>
+          <mat-select formControlName="subcity">
+            <mat-option value="">Select</mat-option>
+            <mat-option *ngFor="let s of filteredSubcities()" [value]="s.id">{{ s.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Woreda</mat-label>
+          <input matInput formControlName="woreda" />
+        </mat-form-field>
+      </div>
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>House No</mat-label>
+          <input matInput formControlName="house_no" />
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button [disabled]="!form.valid" (click)="submit()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white;box-shadow:0 4px 12px rgba(30,58,95,0.3)">
+      {{ editMode ? 'Update' : 'Add Member' }}
+    </button>
+  </mat-dialog-actions>
+</div>

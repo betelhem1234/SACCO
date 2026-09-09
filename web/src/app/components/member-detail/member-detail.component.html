@@ -1,0 +1,761 @@
+    <section class="p-6" style="background:#f0f4f8;min-height:100%">
+      <div class="max-w-full mx-auto">
+        <!-- Back button -->
+        <button routerLink="/members" class="flex items-center gap-1 mb-4 px-3 py-1.5 rounded-lg text-sm border-0 cursor-pointer" style="background:white;color:#475569;border:1px solid #e2e8f0">
+          <mat-icon style="font-size:18px;width:18px;height:18px">arrow_back</mat-icon>
+          Back to Members
+        </button>
+
+        <!-- Loading -->
+        <div *ngIf="loading" class="flex justify-center py-20">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+
+        <ng-container *ngIf="!loading && member">
+          <!-- Header Card -->
+          <div class="rounded-2xl overflow-hidden shadow-sm border mb-6" style="border-color:#e2e8f0">
+            <div class="px-8 py-6 text-white" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold" style="background:rgba(255,255,255,0.2)">
+                  {{ (fullName() || '?')[0] }}
+                </div>
+                <div class="flex-1">
+                  <h1 class="text-2xl font-bold m-0">{{ fullName() }}</h1>
+                  <p class="m-0 mt-1 text-sm" style="color:#93c5fd">
+                    {{ member.idNumbe || member.memberid || member.id?.slice(0,8) }}
+                    <span class="ml-3 px-2 py-0.5 rounded text-xs font-semibold" [style.background]="memberTypeColor()" style="color:white">
+                      {{ memberTypeLabel() }}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-4">
+                <ng-container *ngFor="let tab of tabs">
+                  <button
+                    matTooltip="View {{ tab.label }} records for this member"
+                    (click)="selectTab(tab.key)"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border-0 cursor-pointer transition-all hover:scale-105"
+                    [style.background]="activeTab === tab.key ? '#ffffff' : 'rgba(255,255,255,0.15)'"
+                    [style.color]="activeTab === tab.key ? tab.color : '#ffffff'"
+                    [style.boxShadow]="activeTab === tab.key ? '0 2px 10px rgba(0,0,0,0.2)' : 'none'"
+                    [style.backdropFilter]="activeTab === tab.key ? 'none' : 'blur(4px)'">
+                    <mat-icon style="font-size:16px;width:16px;height:16px">{{ tab.icon }}</mat-icon>
+                    {{ tab.label }}
+                  </button>
+                </ng-container>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 divide-x" style="background:white;border-color:#e2e8f0">
+              <div class="px-6 py-4 text-center">
+                <p class="text-xs font-medium" style="color:#64748b">Status</p>
+                <p class="text-sm font-bold m-0 mt-1" [style.color]="status === 1 ? '#059669' : '#dc2626'">
+                  {{ status === 1 ? 'Active' : 'Inactive' }}
+                </p>
+              </div>
+              <div class="px-6 py-4 text-center">
+                <p class="text-xs font-medium" style="color:#64748b">Gender</p>
+                <p class="text-sm font-bold m-0 mt-1" style="color:#1e293b">{{ member.isMale ? 'Male' : 'Female' }}</p>
+              </div>
+              <div class="px-6 py-4 text-center">
+                <p class="text-xs font-medium" style="color:#64748b">Age</p>
+                <p class="text-sm font-bold m-0 mt-1" style="color:#1e293b">{{ member.age || calculateAge() }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Financial Summary -->
+          <div class="bg-white rounded-2xl shadow-sm border p-6 mb-6 overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0">
+            <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+              <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">account_balance_wallet</mat-icon>
+              Financial Summary
+            </h3>
+            <mat-divider class="mb-4"></mat-divider>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="rounded-xl p-4 text-center" style="background:#ecfdf5;border:1px solid #a7f3d0">
+                <p class="text-xs font-medium m-0" style="color:#059669">Total Saving</p>
+                <p class="text-xl font-bold m-0 mt-2" style="color:#065f46">{{ totalSavings | currency:'ETB':'symbol':'1.2-2' }}</p>
+              </div>
+              <div class="rounded-xl p-4 text-center" style="background:#f5f3ff;border:1px solid #ddd6fe">
+                <p class="text-xs font-medium m-0" style="color:#7c3aed">Total Withdrawal</p>
+                <p class="text-xl font-bold m-0 mt-2" style="color:#5b21b6">{{ totalWithdrawals | currency:'ETB':'symbol':'1.2-2' }}</p>
+              </div>
+              <div class="rounded-xl p-4 text-center" style="background:#ecfeff;border:1px solid #a5f3fc">
+                <p class="text-xs font-medium m-0" style="color:#0891b2">Total Share</p>
+                <p class="text-xl font-bold m-0 mt-2" style="color:#155e75">{{ totalShares | currency:'ETB':'symbol':'1.2-2' }}</p>
+              </div>
+              <div class="rounded-xl p-4 text-center" style="background:#fff7ed;border:1px solid #fed7aa">
+                <p class="text-xs font-medium m-0" style="color:#ea580c">Total Subscription</p>
+                <p class="text-xl font-bold m-0 mt-2" style="color:#9a3412">{{ totalSubscriptions | currency:'ETB':'symbol':'1.2-2' }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Member Records Panel -->
+          <div *ngIf="activeTab" class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border mb-6" style="border-color:#e2e8f0">
+            <div class="flex justify-between items-center gap-3 px-6 py-4" style="border-bottom:1px solid #e2e8f0">
+              <h3 class="text-sm font-bold flex items-center gap-2 m-0" [style.color]="activeTabColor()">
+                <mat-icon style="font-size:18px;width:18px;height:18px">{{ activeTabIcon() }}</mat-icon>
+                {{ activeTabLabel() }} Records
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold" style="background:#f1f5f9;color:#475569">{{ activeRows.length }}</span>
+              </h3>
+<button *ngIf="activeTab !== 'mandatoryTracker'" (click)="addRecord()"
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border-0 cursor-pointer transition-all hover:scale-105"
+                        [style.background]="activeTabColor()" style="color:white">
+                <mat-icon style="font-size:16px;width:16px;height:16px">add</mat-icon>
+                Add {{ activeTabLabel() }}
+              </button>
+            </div>
+
+            <ng-container [ngSwitch]="activeTab">
+              <!-- Savings -->
+              <div *ngSwitchCase="'saving'">
+                <table mat-table [dataSource]="activeRows" class="w-full">
+                  <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef class="pl-6">Date</th>
+                    <td mat-cell *matCellDef="let row" class="pl-6">{{ row.savingDate | date:'shortDate' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="savingType">
+                    <th mat-header-cell *matHeaderCellDef>Saving Type</th>
+                    <td mat-cell *matCellDef="let row">
+                      <span class="px-2.5 py-1 rounded-full text-xs font-semibold" style="background:#dbeafe;color:#1d4ed8">{{ row.savingTypeName }}</span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="account">
+                    <th mat-header-cell *matHeaderCellDef>Account</th>
+                    <td mat-cell *matCellDef="let row" class="text-xs font-mono">{{ row.accountDisplayName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount</th>
+                    <td mat-cell *matCellDef="let row" class="font-bold" style="color:#059669">{{ row.savingAmount | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="ftp">
+                    <th mat-header-cell *matHeaderCellDef>FTP Ref</th>
+                    <td mat-cell *matCellDef="let row" class="text-xs font-mono">{{ row.ftp }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                    <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                      <button mat-icon-button matTooltip="Edit" (click)="editRecord(row)" class="!w-8 !h-8" style="color:#1e3a5f">
+                        <span class="material-icons" style="font-size:18px">edit</span>
+                      </button>
+                      <button mat-icon-button matTooltip="Delete" (click)="deleteRecord(row)" class="!w-8 !h-8" style="color:#ef4444">
+                        <span class="material-icons" style="font-size:18px">delete_outline</span>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="savingColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: savingColumns;"></tr>
+                </table>
+                <div *ngIf="activeRows.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                  <span class="material-icons mb-3" style="font-size:40px;color:#cbd5e1">savings</span>
+                  <p class="text-sm font-medium" style="color:#64748b">No savings recorded for this member yet</p>
+                  <p class="text-xs mt-1" style="color:#94a3b8">Click "Add Saving" to record one</p>
+                </div>
+              </div>
+
+              <!-- Withdrawals -->
+              <div *ngSwitchCase="'withdrawal'">
+                <table mat-table [dataSource]="activeRows" class="w-full">
+                  <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef class="pl-6">Date</th>
+                    <td mat-cell *matCellDef="let row" class="pl-6">{{ row.date | date:'shortDate' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="savingType">
+                    <th mat-header-cell *matHeaderCellDef>Saving Type</th>
+                    <td mat-cell *matCellDef="let row">
+                      <span class="px-2.5 py-1 rounded-full text-xs font-semibold" style="background:#ede9fe;color:#6d28d9">{{ row.savingTypeName }}</span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount (ETB)</th>
+                    <td mat-cell *matCellDef="let row" class="font-bold" style="color:#7c3aed">{{ row.amount | number:'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="ftp">
+                    <th mat-header-cell *matHeaderCellDef>FTP Ref</th>
+                    <td mat-cell *matCellDef="let row" class="text-xs font-mono">{{ row.ftp }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="bankName">
+                    <th mat-header-cell *matHeaderCellDef>Credit Bank</th>
+                    <td mat-cell *matCellDef="let row">{{ row.bankName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                    <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                      <button mat-icon-button matTooltip="Edit" (click)="editRecord(row)" class="!w-8 !h-8" style="color:#1e3a5f">
+                        <span class="material-icons" style="font-size:18px">edit</span>
+                      </button>
+                      <button mat-icon-button matTooltip="Delete" (click)="deleteRecord(row)" class="!w-8 !h-8" style="color:#ef4444">
+                        <span class="material-icons" style="font-size:18px">delete_outline</span>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="withdrawalColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: withdrawalColumns;"></tr>
+                </table>
+                <div *ngIf="activeRows.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                  <span class="material-icons mb-3" style="font-size:40px;color:#cbd5e1">payments</span>
+                  <p class="text-sm font-medium" style="color:#64748b">No withdrawals recorded for this member yet</p>
+                </div>
+              </div>
+
+              <!-- Transfers -->
+              <div *ngSwitchCase="'transfer'">
+                <table mat-table [dataSource]="activeRows" class="w-full">
+                  <ng-container matColumnDef="date">
+                    <th mat-header-cell *matHeaderCellDef class="pl-6">Date</th>
+                    <td mat-cell *matCellDef="let row" class="pl-6">{{ row.date | date:'shortDate' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="source">
+                    <th mat-header-cell *matHeaderCellDef>From</th>
+                    <td mat-cell *matCellDef="let row" class="font-medium">{{ row.sourceMemberName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="sourceType">
+                    <th mat-header-cell *matHeaderCellDef>Source Type</th>
+                    <td mat-cell *matCellDef="let row" class="text-xs font-mono">{{ row.sourceSavingTypeName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="dest">
+                    <th mat-header-cell *matHeaderCellDef>To</th>
+                    <td mat-cell *matCellDef="let row" class="font-medium">{{ row.destMemberName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="destType">
+                    <th mat-header-cell *matHeaderCellDef>Dest Type</th>
+                    <td mat-cell *matCellDef="let row" class="text-xs font-mono">{{ row.destSavingTypeName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount</th>
+                    <td mat-cell *matCellDef="let row" class="font-bold" style="color:#2563eb">{{ row.amount | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                    <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                      <button mat-icon-button matTooltip="Edit" (click)="editRecord(row)" class="!w-8 !h-8" style="color:#1e3a5f">
+                        <span class="material-icons" style="font-size:18px">edit</span>
+                      </button>
+                      <button mat-icon-button matTooltip="Delete" (click)="deleteRecord(row)" class="!w-8 !h-8" style="color:#ef4444">
+                        <span class="material-icons" style="font-size:18px">delete_outline</span>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="transferColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: transferColumns;"></tr>
+                </table>
+                <div *ngIf="activeRows.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                  <span class="material-icons mb-3" style="font-size:40px;color:#cbd5e1">swap_horiz</span>
+                  <p class="text-sm font-medium" style="color:#64748b">No transfers involving this member yet</p>
+                </div>
+              </div>
+
+              <!-- Share Transfers -->
+              <div *ngSwitchCase="'shareTransfer'">
+                <table mat-table [dataSource]="activeRows" class="w-full">
+                  <ng-container matColumnDef="transferDate">
+                    <th mat-header-cell *matHeaderCellDef class="pl-6">Date</th>
+                    <td mat-cell *matCellDef="let row" class="pl-6">{{ row.transferDate | date:'shortDate' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="source">
+                    <th mat-header-cell *matHeaderCellDef>From</th>
+                    <td mat-cell *matCellDef="let row" class="font-medium">{{ row.sourceMemberName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="dest">
+                    <th mat-header-cell *matHeaderCellDef>To</th>
+                    <td mat-cell *matCellDef="let row" class="font-medium">{{ row.destMemberName }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="units">
+                    <th mat-header-cell *matHeaderCellDef>Units</th>
+                    <td mat-cell *matCellDef="let row">{{ row.units }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount</th>
+                    <td mat-cell *matCellDef="let row" class="font-bold" style="color:#db2777">{{ row.totalAmount | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="ftp">
+                    <th mat-header-cell *matHeaderCellDef>FTP Ref</th>
+                    <td mat-cell *matCellDef="let row" class="text-xs font-mono">{{ row.ftp }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                    <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                      <button mat-icon-button matTooltip="Edit" (click)="editRecord(row)" class="!w-8 !h-8" style="color:#1e3a5f">
+                        <span class="material-icons" style="font-size:18px">edit</span>
+                      </button>
+                      <button mat-icon-button matTooltip="Delete" (click)="deleteRecord(row)" class="!w-8 !h-8" style="color:#ef4444">
+                        <span class="material-icons" style="font-size:18px">delete_outline</span>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="shareTransferColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: shareTransferColumns;"></tr>
+                </table>
+                <div *ngIf="activeRows.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                  <span class="material-icons mb-3" style="font-size:40px;color:#cbd5e1">precision_manufacturing</span>
+                  <p class="text-sm font-medium" style="color:#64748b">No share transfers involving this member yet</p>
+                </div>
+              </div>
+
+              <!-- Share Subscriptions -->
+              <div *ngSwitchCase="'shareSubscription'">
+                <table mat-table [dataSource]="activeRows" class="w-full">
+                  <ng-container matColumnDef="subscriptionDate">
+                    <th mat-header-cell *matHeaderCellDef class="pl-6">Date</th>
+                    <td mat-cell *matCellDef="let row" class="pl-6">{{ row.subscriptionDate | date:'shortDate' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="units">
+                    <th mat-header-cell *matHeaderCellDef>Units</th>
+                    <td mat-cell *matCellDef="let row">{{ row.units }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount</th>
+                    <td mat-cell *matCellDef="let row" class="font-bold" style="color:#ea580c">{{ row.totalAmount | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                    <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                      <button mat-icon-button matTooltip="Edit" (click)="editRecord(row)" class="!w-8 !h-8" style="color:#1e3a5f">
+                        <span class="material-icons" style="font-size:18px">edit</span>
+                      </button>
+                      <button mat-icon-button matTooltip="Delete" (click)="deleteRecord(row)" class="!w-8 !h-8" style="color:#ef4444">
+                        <span class="material-icons" style="font-size:18px">delete_outline</span>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="shareSubscriptionColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: shareSubscriptionColumns;"></tr>
+                </table>
+                <div *ngIf="activeRows.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                  <span class="material-icons mb-3" style="font-size:40px;color:#cbd5e1">assignment</span>
+                  <p class="text-sm font-medium" style="color:#64748b">No share subscriptions for this member yet</p>
+                </div>
+              </div>
+
+              <!-- Share Purchases -->
+              <div *ngSwitchCase="'sharePurchase'">
+                <table mat-table [dataSource]="activeRows" class="w-full">
+                  <ng-container matColumnDef="purchaseDate">
+                    <th mat-header-cell *matHeaderCellDef class="pl-6">Date</th>
+                    <td mat-cell *matCellDef="let row" class="pl-6">{{ row.purchaseDate | date:'shortDate' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="units">
+                    <th mat-header-cell *matHeaderCellDef>Units</th>
+                    <td mat-cell *matCellDef="let row">{{ row.units }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="amount">
+                    <th mat-header-cell *matHeaderCellDef>Amount</th>
+                    <td mat-cell *matCellDef="let row" class="font-bold" style="color:#0f766e">{{ row.totalAmount | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="fee">
+                    <th mat-header-cell *matHeaderCellDef>Service Fee</th>
+                    <td mat-cell *matCellDef="let row">{{ row.serviceFee | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="ref">
+                    <th mat-header-cell *matHeaderCellDef>Reference</th>
+                    <td mat-cell *matCellDef="let row" class="text-xs font-mono">{{ row.transactionReference || '-' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                    <td mat-cell *matCellDef="let row" class="text-right pr-6">
+                      <button mat-icon-button matTooltip="Edit" (click)="editRecord(row)" class="!w-8 !h-8" style="color:#1e3a5f">
+                        <span class="material-icons" style="font-size:18px">edit</span>
+                      </button>
+                      <button mat-icon-button matTooltip="Delete" (click)="deleteRecord(row)" class="!w-8 !h-8" style="color:#ef4444">
+                        <span class="material-icons" style="font-size:18px">delete_outline</span>
+                      </button>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="sharePurchaseColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: sharePurchaseColumns;"></tr>
+                </table>
+                <div *ngIf="activeRows.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                  <span class="material-icons mb-3" style="font-size:40px;color:#cbd5e1">shopping_cart</span>
+                  <p class="text-sm font-medium" style="color:#64748b">No share purchases for this member yet</p>
+                </div>
+              </div>
+              <!-- Mandatory Saving Tracker -->
+              <div *ngSwitchCase="'mandatoryTracker'">
+                <div *ngIf="trackerLoading" class="flex justify-center py-12">
+                  <mat-spinner diameter="36"></mat-spinner>
+                </div>
+                <div *ngIf="!trackerLoading && trackerData.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                  <span class="material-icons mb-3" style="font-size:40px;color:#cbd5e1">calendar_month</span>
+                  <p class="text-sm font-medium" style="color:#64748b">No mandatory saving tracker data for this member yet</p>
+                  <p class="text-xs mt-1" style="color:#94a3b8">Record a saving against the mandatory type to see the tracker</p>
+                </div>
+                <table *ngIf="!trackerLoading && trackerData.length > 0" mat-table [dataSource]="trackerData" class="w-full">
+                  <ng-container matColumnDef="label">
+                    <th mat-header-cell *matHeaderCellDef class="pl-6">Month</th>
+                    <td mat-cell *matCellDef="let row" class="pl-6 font-medium">{{ row.label }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="requiredAmount">
+                    <th mat-header-cell *matHeaderCellDef class="text-right">Required</th>
+                    <td mat-cell *matCellDef="let row" class="text-right">{{ row.requiredAmount | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="paidAmount">
+                    <th mat-header-cell *matHeaderCellDef class="text-right">Paid</th>
+                    <td mat-cell *matCellDef="let row" class="text-right">{{ row.paidAmount | currency:'ETB':'symbol':'1.2-2' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="remaining">
+                    <th mat-header-cell *matHeaderCellDef class="text-right">Remaining</th>
+                    <td mat-cell *matCellDef="let row" class="text-right font-medium" [style.color]="row.remaining > 0 ? '#dc2626' : '#059669'">
+                      {{ row.remaining > 0 ? ('ETB ' + (row.remaining | number: '1.0-2')) : 'Covered' }}
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>Status</th>
+                    <td mat-cell *matCellDef="let row" class="text-center">
+                      <span class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                            [style.background]="row.status === 'PAID' ? '#dcfce7' : row.status === 'PARTIAL' ? '#fef9c3' : '#fee2e2'"
+                            [style.color]="row.status === 'PAID' ? '#166534' : row.status === 'PARTIAL' ? '#854d0e' : '#991b1b'">
+                        {{ row.status }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="['label','requiredAmount','paidAmount','remaining','status']"></tr>
+                  <tr mat-row *matRowDef="let row; columns: ['label','requiredAmount','paidAmount','remaining','status'];"></tr>
+                </table>
+              </div>
+            </ng-container>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Personal Info -->
+            <div class="bg-white rounded-2xl shadow-sm border p-6" style="border-color:#e2e8f0">
+              <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+                <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">person</mat-icon>
+                Personal Information
+              </h3>
+              <mat-divider class="mb-4"></mat-divider>
+              <div class="space-y-3">
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Full Name</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ fullName() }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Mother Name</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.mother_name || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Nationality</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.nationality || 'Ethiopian' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Marital Status</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ maritalStatusLabel() }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Family Size</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.family_size || '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="bg-white rounded-2xl shadow-sm border p-6" style="border-color:#e2e8f0">
+              <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+                <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">contact_phone</mat-icon>
+                Contact Information
+              </h3>
+              <mat-divider class="mb-4"></mat-divider>
+              <div class="space-y-3">
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Phone</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.telephone || member.phone || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Home Phone</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.home_phone_number || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Email</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.email || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Region</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ lookupName(regions, member.state_id) }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Subcity</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ lookupName(subcities, member.subcity) }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Woreda</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.woreda || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Kebele</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.kebele || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">House No</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.house_no || '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Membership Info -->
+            <div class="bg-white rounded-2xl shadow-sm border p-6" style="border-color:#e2e8f0">
+              <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+                <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">badge</mat-icon>
+                Membership Information
+              </h3>
+              <mat-divider class="mb-4"></mat-divider>
+              <div class="space-y-3">
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Member ID</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.idNumbe || member.memberid || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Registration Date</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ formatDate(member.registrationDate || member.reg_date) }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Membership Date</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ formatDate(member.membership_date) }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Saving Book No</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.saving_book_no || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Education</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ lookupName(educations, member.education_id) }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Membership Type</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ membershipTypeLabel() }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Employment & Financial -->
+            <div class="bg-white rounded-2xl shadow-sm border p-6" style="border-color:#e2e8f0">
+              <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+                <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">work</mat-icon>
+                Employment & Financial
+              </h3>
+              <mat-divider class="mb-4"></mat-divider>
+              <div class="space-y-3">
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Job Field</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.job_field || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Work Address</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.work_address || '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Monthly Income</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.monthly_income ? (member.monthly_income | currency:'ETB':'symbol':'1.0-0') : '-' }}</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span class="text-xs" style="color:#64748b">Employee</span>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.is_employee ? 'Yes' : 'No' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parent / Immediate Contact -->
+          <div class="bg-white rounded-2xl shadow-sm border p-6 mb-6 overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0">
+            <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+              <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">emergency_contact</mat-icon>
+              {{ (member.memberType ?? member.member_type) === 0 ? 'Parent / Guardian' : 'Immediate Contact' }}
+            </h3>
+            <mat-divider class="mb-4"></mat-divider>
+            <ng-container *ngIf="(member.memberType ?? member.member_type) === 0; else adultContact">
+              <div *ngIf="hasParentInfo(); else noContact" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <p class="text-xs" style="color:#64748b">Full Name</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ parentFullName() }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Job</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.job_field || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Phone</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.telephone || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Email</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.email || '-' }}</p>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #adultContact>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" *ngIf="hasImmediateContact(); else noContact">
+                <div>
+                  <p class="text-xs" style="color:#64748b">Full Name</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.immediate_contact_full_name || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Phone</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.immediate_contact_phone || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Email</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.immediate_contact_email || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Region</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ lookupName(regions, member.immediate_contact_region?.toString()) || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Subcity</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ lookupName(subcities, member.immediate_contact_subcity) || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">Woreda</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.immediate_contact_woreda || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs" style="color:#64748b">House No</p>
+                  <p class="text-sm font-medium m-0" style="color:#1e293b">{{ member.immediate_contact_house_no || '-' }}</p>
+                </div>
+              </div>
+            </ng-template>
+            <ng-template #noContact>
+              <p class="text-sm" style="color:#94a3b8">No {{ (member.memberType ?? member.member_type) === 0 ? 'parent' : 'immediate contact' }} information</p>
+            </ng-template>
+          </div>
+
+          <!-- Beneficiaries -->
+          <div class="bg-white rounded-2xl shadow-sm border p-6 mb-6 overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0">
+            <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+              <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">favorite</mat-icon>
+              Beneficiaries ({{ (member.beneficiaries || []).length }})
+            </h3>
+            <mat-divider class="mb-4"></mat-divider>
+            <div *ngIf="(member.beneficiaries || []).length > 0; else noBeneficiaries">
+              <table mat-table [dataSource]="member.beneficiaries!" class="w-full">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef class="pl-4">Name</th>
+                  <td mat-cell *matCellDef="let b" class="pl-4 font-medium">{{ b.name }}</td>
+                </ng-container>
+                <ng-container matColumnDef="isMale">
+                  <th mat-header-cell *matHeaderCellDef>Gender</th>
+                  <td mat-cell *matCellDef="let b">
+                    <span class="px-2 py-0.5 rounded text-xs" [style.background]="b.is_male ? '#dbeafe' : '#fce7f3'" [style.color]="b.is_male ? '#1d4ed8' : '#db2777'">
+                      {{ b.is_male ? 'Male' : 'Female' }}
+                    </span>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="relationType">
+                  <th mat-header-cell *matHeaderCellDef>Relation</th>
+                  <td mat-cell *matCellDef="let b">{{ relationLabel(b.relation_type) }}</td>
+                </ng-container>
+                <ng-container matColumnDef="telephone">
+                  <th mat-header-cell *matHeaderCellDef>Phone</th>
+                  <td mat-cell *matCellDef="let b">{{ b.telephone || '-' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="region">
+                  <th mat-header-cell *matHeaderCellDef>Region</th>
+                  <td mat-cell *matCellDef="let b">{{ lookupName(regions, b.state_id) || '-' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="subcity">
+                  <th mat-header-cell *matHeaderCellDef>Subcity</th>
+                  <td mat-cell *matCellDef="let b">{{ lookupName(subcities, b.subcity) || '-' }}</td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="beneficiaryColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: beneficiaryColumns;"></tr>
+              </table>
+            </div>
+            <ng-template #noBeneficiaries>
+              <p class="text-sm" style="color:#94a3b8">No beneficiaries registered</p>
+            </ng-template>
+          </div>
+
+          <!-- Group Members (Company only) -->
+          <ng-container *ngIf="(member.memberType ?? member.member_type) === 2">
+            <div class="bg-white rounded-2xl shadow-sm border p-6 mb-6 overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0">
+              <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+                <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">group</mat-icon>
+                Group Members ({{ (member.memberGroups || []).length }})
+              </h3>
+              <mat-divider class="mb-4"></mat-divider>
+              <div *ngIf="(member.memberGroups || []).length > 0; else noGroupMembers">
+                <table mat-table [dataSource]="member.memberGroups!" class="w-full">
+                  <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef class="pl-4">Full Name</th>
+                    <td mat-cell *matCellDef="let r" class="pl-4 font-medium">{{ r.first_name }} {{ r.middle_name }} {{ r.last_name }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="isMale">
+                    <th mat-header-cell *matHeaderCellDef>Gender</th>
+                    <td mat-cell *matCellDef="let r">
+                      <span class="px-2 py-0.5 rounded text-xs" [style.background]="r.is_male ? '#dbeafe' : '#fce7f3'" [style.color]="r.is_male ? '#1d4ed8' : '#db2777'">
+                        {{ r.is_male ? 'Male' : 'Female' }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="telephone">
+                    <th mat-header-cell *matHeaderCellDef>Phone</th>
+                    <td mat-cell *matCellDef="let r">{{ r.telephone || '-' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="region">
+                    <th mat-header-cell *matHeaderCellDef>Region</th>
+                    <td mat-cell *matCellDef="let r">{{ lookupName(regions, r.state_id) || '-' }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="subcity">
+                    <th mat-header-cell *matHeaderCellDef>Subcity</th>
+                    <td mat-cell *matCellDef="let r">{{ lookupName(subcities, r.subcity) || '-' }}</td>
+                  </ng-container>
+                  <tr mat-header-row *matHeaderRowDef="referralColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: referralColumns;"></tr>
+                </table>
+              </div>
+              <ng-template #noGroupMembers>
+                <p class="text-sm" style="color:#94a3b8">No group members registered</p>
+              </ng-template>
+            </div>
+          </ng-container>
+
+          <!-- Referral Members -->
+          <div class="bg-white rounded-2xl shadow-sm border p-6 mb-6 overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0">
+            <h3 class="text-sm font-bold flex items-center gap-2 mb-4" style="color:#1e293b">
+              <mat-icon style="font-size:18px;width:18px;height:18px;color:#3b82f6">group_add</mat-icon>
+              Referral Members ({{ (member.referal_members || []).length }})
+            </h3>
+            <mat-divider class="mb-4"></mat-divider>
+            <div *ngIf="(member.referal_members || []).length > 0; else noReferrals">
+              <table mat-table [dataSource]="member.referal_members!" class="w-full">
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef class="pl-4">Full Name</th>
+                  <td mat-cell *matCellDef="let r" class="pl-4 font-medium">{{ r.first_name }} {{ r.middle_name }} {{ r.last_name }}</td>
+                </ng-container>
+                <ng-container matColumnDef="isMale">
+                  <th mat-header-cell *matHeaderCellDef>Gender</th>
+                  <td mat-cell *matCellDef="let r">
+                    <span class="px-2 py-0.5 rounded text-xs" [style.background]="r.is_male ? '#dbeafe' : '#fce7f3'" [style.color]="r.is_male ? '#1d4ed8' : '#db2777'">
+                      {{ r.is_male ? 'Male' : 'Female' }}
+                    </span>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="telephone">
+                  <th mat-header-cell *matHeaderCellDef>Phone</th>
+                  <td mat-cell *matCellDef="let r">{{ r.telephone || '-' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="region">
+                  <th mat-header-cell *matHeaderCellDef>Region</th>
+                  <td mat-cell *matCellDef="let r">{{ lookupName(regions, r.state_id) || '-' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="subcity">
+                  <th mat-header-cell *matHeaderCellDef>Subcity</th>
+                  <td mat-cell *matCellDef="let r">{{ lookupName(subcities, r.subcity) || '-' }}</td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="referralColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: referralColumns;"></tr>
+              </table>
+            </div>
+            <ng-template #noReferrals>
+              <p class="text-sm" style="color:#94a3b8">No referral members registered</p>
+            </ng-template>
+          </div>
+
+          </ng-container>
+
+        <!-- Error -->
+        <div *ngIf="!loading && error" class="flex flex-col items-center py-20 text-center">
+          <mat-icon style="font-size:48px;width:48px;height:48px;color:#ef4444">error_outline</mat-icon>
+          <p class="mt-4 font-medium" style="color:#dc2626">Failed to load member details</p>
+          <p class="text-sm" style="color:#64748b">{{ error }}</p>
+        </div>
+      </div>
+    </section>

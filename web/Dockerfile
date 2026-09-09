@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Copy root config files
 COPY package*.json ./
+COPY .npmrc ./
 COPY nx.json ./
 COPY tsconfig.base.json ./
 
@@ -15,7 +16,7 @@ COPY libs ./libs
 COPY web ./web
 
 # Build the app using Nx
-RUN npx nx build ngrx-crud --configuration development
+RUN npx nx build ngrx-crud --configuration development --base-href=/sacco/
 
 # Run stage
 FROM nginx:alpine

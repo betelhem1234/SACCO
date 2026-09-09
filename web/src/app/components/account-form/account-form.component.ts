@@ -9,16 +9,21 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatOption } from '@angular/material/select';
 
 import {
     Account,
     AccountType,
     AccountCategory,
+    AccountClassification,
     ACCOUNT_TYPE_OPTIONS,
     ACCOUNT_CATEGORY_OPTIONS,
 } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { addAccount, updateAccount } from '../../state/lookups.actions';
+import { addAccount, updateAccount } from '../../state/lookups/lookups.actions';
+import { Observable, combineLatest, map, startWith } from 'rxjs';
+import { selectAllAccountClassifications } from 'src/app/state/lookups/lookups.selectors';
+import { loadAccountClassifications } from '../../state/lookups/lookups.actions';
 
 @Component({
     selector: 'app-account-form',
@@ -33,75 +38,19 @@ import { addAccount, updateAccount } from '../../state/lookups.actions';
         MatIconModule,
         MatDialogModule,
         ReactiveFormsModule,
+        MatOption,
     ],
-    template: `
-    <div>
-      <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
-        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
-          <span class="material-icons text-white" style="font-size:20px">account_balance_wallet</span>
-        </div>
-        <div>
-          <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit account' : 'New account' }}</h2>
-          <p class="text-xs m-0" style="color:#93c5fd">Set type, category, and identifiers</p>
-        </div>
-      </div>
-      <mat-dialog-content class="px-6 py-5">
-        <form [formGroup]="form" class="flex flex-col gap-3">
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Name</mat-label>
-            <input matInput formControlName="name" required />
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Description</mat-label>
-            <input matInput formControlName="description" />
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Account number</mat-label>
-            <input matInput formControlName="accountNumber" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Account type</mat-label>
-            <mat-select formControlName="accountType" required>
-              <mat-option *ngFor="let o of typeOptions" [value]="o.value">{{ o.label }}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Account category</mat-label>
-            <mat-select formControlName="accountCategory" required>
-              <mat-option *ngFor="let o of categoryOptions" [value]="o.value">{{ o.label }}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Effective date</mat-label>
-            <input matInput type="date" formControlName="dateStr" required />
-          </mat-form-field>
-
-          <div class="flex gap-6 flex-wrap">
-            <mat-slide-toggle formControlName="isActive">Active</mat-slide-toggle>
-            <mat-slide-toggle formControlName="isParent">Parent account</mat-slide-toggle>
-          </div>
-        </form>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
-        <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
-        <button [disabled]="!form.valid" (click)="submit()"
-                class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
-                style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white">
-          {{ editMode ? 'Update account' : 'Save account' }}
-        </button>
-      </mat-dialog-actions>
-    </div>
-  `,
-    styles: [`mat-dialog-content { min-width: 420px; max-height: 70vh; }`],
+    templateUrl: './account-form.component.html',
+    styleUrls: ['./account-form.component.css'],
 })
 export class AccountFormComponent implements OnInit {
     form!: FormGroup;
     editMode = false;
     readonly typeOptions = ACCOUNT_TYPE_OPTIONS;
     readonly categoryOptions = ACCOUNT_CATEGORY_OPTIONS;
+    classifications$!: Observable<AccountClassification[]>;
+    filteredClassifications$!: Observable<AccountClassification[]>;
+    filteredClassificationCount = 0;
 
     constructor(
         private store: Store<AppState>,
@@ -111,6 +60,10 @@ export class AccountFormComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
+        this.store.dispatch(loadAccountClassifications());
+        const all$ = this.store.select(selectAllAccountClassifications);
+        this.classifications$ = all$;
+
         const a = this.data?.account;
         this.editMode = !!a?.id;
 
@@ -124,10 +77,22 @@ export class AccountFormComponent implements OnInit {
             accountNumber: [a?.accountNumber ?? ''],
             accountType: [a?.accountType ?? AccountType.ASSET, Validators.required],
             accountCategory: [a?.accountCategory ?? AccountCategory.OTHER_ACCOUNT, Validators.required],
+            classificationId: [a?.classificationId ?? null],
             dateStr: [dateStr, Validators.required],
             isActive: [a?.isActive ?? true],
             isParent: [a?.isParent ?? false],
         });
+
+        this.filteredClassifications$ = combineLatest([
+            all$,
+            this.form.get('accountType')!.valueChanges.pipe(startWith(this.form.get('accountType')!.value)),
+        ]).pipe(
+            map(([classifications, accountType]) => {
+                const result = (classifications ?? []).filter((c) => c.accountType === accountType);
+                this.filteredClassificationCount = result.length;
+                return result;
+            })
+        );
     }
 
     submit(): void {
@@ -144,6 +109,7 @@ export class AccountFormComponent implements OnInit {
                 accountNumber: v.accountNumber || undefined,
                 accountType: v.accountType as AccountType,
                 accountCategory: v.accountCategory as AccountCategory,
+                classificationId: v.classificationId || undefined,
                 date,
                 isActive: v.isActive,
                 isParent: v.isParent,
@@ -156,6 +122,7 @@ export class AccountFormComponent implements OnInit {
                 accountNumber: v.accountNumber || undefined,
                 accountType: v.accountType as AccountType,
                 accountCategory: v.accountCategory as AccountCategory,
+                classificationId: v.classificationId || undefined,
                 date,
                 isActive: v.isActive,
                 isParent: v.isParent,

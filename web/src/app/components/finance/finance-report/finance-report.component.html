@@ -1,0 +1,610 @@
+<div class="fin-page">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#1e3a5f,#0f766e)">
+      <span class="material-icons text-white" style="font-size:20px">assessment</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Finance Report</h1>
+      <p class="text-xs" style="color:#64748b">Collection, transfer/withdrawal/expense, loan disbursement, income statement, loan attachment &amp; weekly report</p>
+    </div>
+    <button mat-stroked-button (click)="exportToExcel()" class="rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons mr-1" style="font-size:18px">file_download</span> Export
+    </button>
+    <div class="w-8"></div>
+  </div>
+
+  <div class="py-4 no-print flex items-center gap-4">
+    <mat-form-field appearance="outline" class="min-w-[160px]" subscriptSizing="dynamic">
+      <mat-label>Select Year</mat-label>
+      <mat-select [(ngModel)]="selectedYear" (selectionChange)="onYearChange()">
+        <mat-option *ngFor="let y of years" [value]="y">{{ y }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <div class="text-sm" style="color:#64748b">Year: {{ selectedYear }}</div>
+  </div>
+
+  <div *ngIf="monthlyLoading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p class="text-sm font-semibold" style="color:#64748b">Loading finance report…</p>
+  </div>
+
+  <mat-tab-group *ngIf="!(monthlyLoading$ | async)" animationDuration="0ms" [(selectedIndex)]="selectedTabIndex">
+    <!-- Tab 1: Collection Report -->
+    <mat-tab label="Collection Report">
+      <div class="py-4">
+        <div *ngIf="monthlyReport as r" class="fin-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="fin-table fin-report-table">
+              <thead>
+                <tr>
+                  <th class="left">General Name</th>
+                  <th *ngFor="let m of months">{{ m }}</th>
+                  <th class="fin-text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="compulsory">Compulsory Saving</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('new_compulsory', null, 'Compulsory saving From New Members')">Compulsory saving From New Members</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('new_compulsory', null, 'Compulsory saving From New Members', d.period)">{{ etb(d.new_compulsory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('new_compulsory')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('old_compulsory', null, 'Compulsory saving From Existing Members')">Compulsory saving From Existing Members</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('old_compulsory', null, 'Compulsory saving From Existing Members', d.period)">{{ etb(d.old_compulsory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('old_compulsory')) }}</td>
+                </tr>
+                <tr class="fin-subtotal">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('total_compulsory', null, 'Total Compulsory saving collected')"><strong>Total Compulsory saving collected</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('total_compulsory', null, 'Total Compulsory saving collected', d.period)"><strong>{{ etb(d.total_compulsory) }}</strong></td>
+                  <td class="fin-numeric"><strong>{{ etb(getTotal('total_compulsory')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="voluntary">Voluntary Saving</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('new_voluntary', null, 'Voluntary saving From New Members')">Voluntary saving From New Members</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('new_voluntary', null, 'Voluntary saving From New Members', d.period)">{{ etb(d.new_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('new_voluntary')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('old_voluntary', null, 'Voluntary saving From Existing Members')">Voluntary saving From Existing Members</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('old_voluntary', null, 'Voluntary saving From Existing Members', d.period)">{{ etb(d.old_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('old_voluntary')) }}</td>
+                </tr>
+                <tr class="fin-subtotal">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('total_voluntary', null, 'Total voluntary saving collected')"><strong>Total voluntary saving collected</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('total_voluntary', null, 'Total voluntary saving collected', d.period)"><strong>{{ etb(d.total_voluntary) }}</strong></td>
+                  <td class="fin-numeric"><strong>{{ etb(getTotal('total_voluntary')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="share">Share</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('new_share', null, 'Initial share Sold for new Members')">Initial share Sold for new Members</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('new_share', null, 'Initial share Sold for new Members', d.period)">{{ etb(d.new_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('new_share')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('old_share', null, 'Additional share Sold for Existing Members')">Additional share Sold for Existing Members</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('old_share', null, 'Additional share Sold for Existing Members', d.period)">{{ etb(d.old_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('old_share')) }}</td>
+                </tr>
+                <tr class="fin-subtotal">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('total_share', null, 'Total Share Sold')"><strong>Total Share Sold</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('total_share', null, 'Total Share Sold', d.period)"><strong>{{ etb(d.total_share) }}</strong></td>
+                  <td class="fin-numeric"><strong>{{ etb(getTotal('total_share')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="income">Income</th>
+                </tr>
+                <tr *ngFor="let name of incomeAccountNames">
+                  <td class="row-label clickable-label" (click)="openYearDetail('income_account', name, name)">{{ name }}</td>
+                  <td *ngFor="let m of months; let i = index" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('income_account', name, name, i + 1)">
+                    {{ etb(getAccountMonthAmount(r.incomeAccounts, name, i + 1)) }}
+                  </td>
+                  <td class="fin-numeric font-semibold">{{ etb(getAccountTotal(r.incomeAccounts, name)) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label" (click)="openYearDetail('income_total', null, 'Income Total')"><strong>Income Total</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('income_total', null, 'Income Total', d.period)">{{ etb(d.income_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('income_total')) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: Transfer, Withdrawal, and Expense -->
+    <mat-tab label="Transfer, Withdrawal, and Expense">
+      <div class="py-4">
+        <div *ngIf="monthlyReport as r" class="fin-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="fin-table fin-report-table">
+              <thead>
+                <tr>
+                  <th class="left">Category</th>
+                  <th *ngFor="let m of months">{{ m }}</th>
+                  <th class="fin-text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="transfer">Transfer Report</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_voluntary_to_mandatory', null, 'Transfer from Voluntary to Mandatory')">Transfer from Voluntary to Mandatory</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('transfer_voluntary_to_mandatory', null, 'Transfer from Voluntary to Mandatory', d.period)">{{ etb(d.transfer_voluntary_to_mandatory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('transfer_voluntary_to_mandatory')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_voluntary_to_voluntary', null, 'Transfer from Voluntary to Voluntary')">Transfer from Voluntary to Voluntary</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('transfer_voluntary_to_voluntary', null, 'Transfer from Voluntary to Voluntary', d.period)">{{ etb(d.transfer_voluntary_to_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('transfer_voluntary_to_voluntary')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_voluntary_to_share', null, 'Transfer from Voluntary to Share')">Transfer from Voluntary to Share</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('transfer_voluntary_to_share', null, 'Transfer from Voluntary to Share', d.period)">{{ etb(d.transfer_voluntary_to_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('transfer_voluntary_to_share')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_share_to_share', null, 'Transfer from Share to Share')">Transfer from Share to Share</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('transfer_share_to_share', null, 'Transfer from Share to Share', d.period)">{{ etb(d.transfer_share_to_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('transfer_share_to_share')) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label" (click)="openYearDetail('transfer_total', null, 'Transfer Total')"><strong>Transfer Total</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('transfer_total', null, 'Transfer Total', d.period)"><strong>{{ etb(d.transfer_total) }}</strong></td>
+                  <td class="fin-numeric font-semibold"><strong>{{ etb(getTotal('transfer_total')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="withdrawal">Saving Withdrawal</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('withdrawal_mandatory', null, 'Withdraw from Mandatory')">Withdraw from Mandatory</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('withdrawal_mandatory', null, 'Withdraw from Mandatory', d.period)">{{ etb(d.withdrawal_mandatory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('withdrawal_mandatory')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('withdrawal_voluntary', null, 'Withdraw from Voluntary')">Withdraw from Voluntary</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('withdrawal_voluntary', null, 'Withdraw from Voluntary', d.period)">{{ etb(d.withdrawal_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('withdrawal_voluntary')) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label" (click)="openYearDetail('withdrawal_total', null, 'Withdrawal Total')"><strong>Withdrawal Total</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('withdrawal_total', null, 'Withdrawal Total', d.period)">{{ etb(d.withdrawal_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('withdrawal_total')) }}</td>
+                </tr>
+
+                <ng-container *ngFor="let group of expenseGroups">
+                  <tr class="fin-table-section">
+                    <th [attr.colspan]="months.length + 2" class="expense">{{ group.parent }}</th>
+                  </tr>
+                  <tr *ngFor="let name of group.names">
+                    <td class="row-label clickable-label" style="padding-left:20px"
+                        (click)="openYearDetail('expense_account', name, name)">{{ name }}</td>
+                    <td *ngFor="let m of months; let i = index" class="fin-numeric clickable-cell"
+                        (click)="openMonthDetail('expense_account', name, name, i + 1)">
+                      {{ etb(getAccountMonthAmount(r.expenseAccounts, name, i + 1)) }}
+                    </td>
+                    <td class="fin-numeric font-semibold">{{ etb(getAccountTotal(r.expenseAccounts, name)) }}</td>
+                  </tr>
+                  <tr class="fin-highlight">
+                    <td class="clickable-label" (click)="openYearDetail('expense_total', null, group.parent + ' Total')"><strong>{{ group.parent }} Total</strong></td>
+                    <td *ngFor="let m of months; let i = index" class="fin-numeric clickable-cell"
+                        (click)="openMonthDetail('expense_total', null, group.parent + ' Total', i + 1)">
+                      <strong>{{ etb(getGroupMonthTotal(r.expenseAccounts, group.names, i + 1)) }}</strong>
+                    </td>
+                    <td class="fin-numeric font-semibold"><strong>{{ etb(getGroupTotal(r.expenseAccounts, group.names)) }}</strong></td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 3: Loan Disbursement Report -->
+    <mat-tab label="Loan Disbursement Report">
+      <div class="py-4">
+        <div *ngIf="monthlyReport as r" class="fin-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="fin-table fin-report-table">
+              <thead>
+                <tr>
+                  <th class="left">Description</th>
+                  <th *ngFor="let m of months">{{ m }}</th>
+                  <th class="fin-text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('disbursement_total', null, 'Monthly Disbursement')">Monthly Disbursement</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('disbursement_total', null, 'Monthly Disbursement', d.period)">{{ etb(d.disbursement_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('disbursement_total')) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 4: Income Statement -->
+    <mat-tab label="Income Statement">
+      <div class="py-4">
+        <div *ngIf="monthlyReport as r" class="fin-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="fin-table fin-report-table">
+              <thead>
+                <tr>
+                  <th class="left">Item</th>
+                  <th *ngFor="let m of months">{{ m }}</th>
+                  <th class="fin-text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="income">Income</th>
+                </tr>
+                <tr *ngFor="let name of incomeAccountNames">
+                  <td class="row-label clickable-label" (click)="openYearDetail('income_account', name, name)">{{ name }}</td>
+                  <td *ngFor="let m of months; let i = index" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('income_account', name, name, i + 1)">
+                    {{ etb(getAccountMonthAmount(r.incomeAccounts, name, i + 1)) }}
+                  </td>
+                  <td class="fin-numeric font-semibold">{{ etb(getAccountTotal(r.incomeAccounts, name)) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label" (click)="openYearDetail('income_total', null, 'Total Income')"><strong>Total Income</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('income_total', null, 'Total Income', d.period)">{{ etb(d.income_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('income_total')) }}</td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="months.length + 2" class="expense">Expense</th>
+                </tr>
+                <tr *ngFor="let name of expenseAccountNames">
+                  <td class="row-label clickable-label" (click)="openYearDetail('expense_account', name, name)">{{ name }}</td>
+                  <td *ngFor="let m of months; let i = index" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('expense_account', name, name, i + 1)">
+                    {{ etb(getAccountMonthAmount(r.expenseAccounts, name, i + 1)) }}
+                  </td>
+                  <td class="fin-numeric font-semibold">{{ etb(getAccountTotal(r.expenseAccounts, name)) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label" (click)="openYearDetail('expense_total', null, 'Total Expense')"><strong>Total Expense</strong></td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric clickable-cell"
+                      (click)="openMonthDetail('expense_total', null, 'Total Expense', d.period)">{{ etb(d.expense_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('expense_total')) }}</td>
+                </tr>
+
+                <tr class="fin-profloss">
+                  <td>Net Profit/Loss</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric" [class.negative]="(d.income_total - d.expense_total) < 0">
+                    {{ etb(d.income_total - d.expense_total) }}
+                  </td>
+                  <td class="fin-numeric font-semibold">{{ etb(getTotal('income_total') - getTotal('expense_total')) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 5: Loan Attachment -->
+    <mat-tab label="Loan Attachment">
+      <div class="py-4">
+        <div *ngIf="monthlyReport as r" class="fin-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="fin-table fin-report-table">
+              <thead>
+                <tr>
+                  <th class="left">Description</th>
+                  <th *ngFor="let m of months">{{ m }}</th>
+                  <th class="fin-text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="row-label">Loan Attachment Total</td>
+                  <td *ngFor="let d of r.monthlyData" class="fin-numeric">0.00</td>
+                  <td class="fin-numeric font-semibold">0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 6: Weekly Report -->
+    <mat-tab label="Weekly Report">
+      <div class="py-4">
+        <div class="flex flex-wrap gap-4 items-end mb-4 no-print">
+          <mat-form-field appearance="outline" class="min-w-[140px]" subscriptSizing="dynamic">
+            <mat-label>Year</mat-label>
+            <mat-select [(ngModel)]="weeklyYear" (selectionChange)="onWeeklyYearChange()">
+              <mat-option *ngFor="let y of years" [value]="y">{{ y }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="min-w-[150px]" subscriptSizing="dynamic">
+            <mat-label>Month</mat-label>
+            <mat-select [(ngModel)]="weeklyMonth" (selectionChange)="onWeeklyMonthChange()">
+              <mat-option [value]="null">All months</mat-option>
+              <mat-option *ngFor="let m of months; let i = index" [value]="i + 1">{{ m }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="min-w-[140px]" subscriptSizing="dynamic">
+            <mat-label>Week</mat-label>
+            <mat-select [(ngModel)]="weeklyWeek" (selectionChange)="onWeeklyWeekChange()">
+              <mat-option [value]="null">All weeks</mat-option>
+              <mat-option *ngFor="let w of weeklyWeekOptions()" [value]="w">Week {{ w }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div *ngIf="weeklyReport as w" class="fin-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="fin-table fin-report-table">
+              <thead>
+                <tr>
+                  <th class="left">Category</th>
+                  <th *ngFor="let d of visibleWeeklyData">W{{ d.period }}</th>
+                  <th class="fin-text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="visibleWeeklyData.length + 2" class="compulsory">Compulsory Saving</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('new_compulsory', null, 'New Compulsory Saving', weeklyYear)">New Compulsory Saving</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('new_compulsory', null, 'New Compulsory Saving', d.period)">{{ etb(d.new_compulsory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('new_compulsory')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('old_compulsory', null, 'Old Compulsory Saving', weeklyYear)">Old Compulsory Saving</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('old_compulsory', null, 'Old Compulsory Saving', d.period)">{{ etb(d.old_compulsory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('old_compulsory')) }}</td>
+                </tr>
+                <tr class="fin-subtotal">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('total_compulsory', null, 'Total Compulsory', weeklyYear)"><strong>Total Compulsory</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('total_compulsory', null, 'Total Compulsory', d.period)"><strong>{{ etb(d.total_compulsory) }}</strong></td>
+                  <td class="fin-numeric"><strong>{{ etb(getWeeklyTotal('total_compulsory')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="visibleWeeklyData.length + 2" class="voluntary">Voluntary Saving</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('new_voluntary', null, 'New Voluntary Saving', weeklyYear)">New Voluntary Saving</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('new_voluntary', null, 'New Voluntary Saving', d.period)">{{ etb(d.new_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('new_voluntary')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('old_voluntary', null, 'Old Voluntary Saving', weeklyYear)">Old Voluntary Saving</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('old_voluntary', null, 'Old Voluntary Saving', d.period)">{{ etb(d.old_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('old_voluntary')) }}</td>
+                </tr>
+                <tr class="fin-subtotal">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('total_voluntary', null, 'Total Voluntary', weeklyYear)"><strong>Total Voluntary</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('total_voluntary', null, 'Total Voluntary', d.period)"><strong>{{ etb(d.total_voluntary) }}</strong></td>
+                  <td class="fin-numeric"><strong>{{ etb(getWeeklyTotal('total_voluntary')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="visibleWeeklyData.length + 2" class="share">Share</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('new_share', null, 'New Share', weeklyYear)">New Share</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('new_share', null, 'New Share', d.period)">{{ etb(d.new_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('new_share')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('old_share', null, 'Old Share', weeklyYear)">Old Share</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('old_share', null, 'Old Share', d.period)">{{ etb(d.old_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('old_share')) }}</td>
+                </tr>
+                <tr class="fin-subtotal">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('total_share', null, 'Total Share', weeklyYear)"><strong>Total Share</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('total_share', null, 'Total Share', d.period)"><strong>{{ etb(d.total_share) }}</strong></td>
+                  <td class="fin-numeric"><strong>{{ etb(getWeeklyTotal('total_share')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="visibleWeeklyData.length + 2" class="transfer">Transfer Report</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_voluntary_to_mandatory', null, 'Transfer from Voluntary to Mandatory', weeklyYear)">Transfer from Voluntary to Mandatory</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('transfer_voluntary_to_mandatory', null, 'Transfer from Voluntary to Mandatory', d.period)">{{ etb(d.transfer_voluntary_to_mandatory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('transfer_voluntary_to_mandatory')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_voluntary_to_voluntary', null, 'Transfer from Voluntary to Voluntary', weeklyYear)">Transfer from Voluntary to Voluntary</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('transfer_voluntary_to_voluntary', null, 'Transfer from Voluntary to Voluntary', d.period)">{{ etb(d.transfer_voluntary_to_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('transfer_voluntary_to_voluntary')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_voluntary_to_share', null, 'Transfer from Voluntary to Share', weeklyYear)">Transfer from Voluntary to Share</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('transfer_voluntary_to_share', null, 'Transfer from Voluntary to Share', d.period)">{{ etb(d.transfer_voluntary_to_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('transfer_voluntary_to_share')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('transfer_share_to_share', null, 'Transfer from Share to Share', weeklyYear)">Transfer from Share to Share</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('transfer_share_to_share', null, 'Transfer from Share to Share', d.period)">{{ etb(d.transfer_share_to_share) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('transfer_share_to_share')) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('transfer_total', null, 'Transfer Total', weeklyYear)"><strong>Transfer Total</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('transfer_total', null, 'Transfer Total', d.period)"><strong>{{ etb(d.transfer_total) }}</strong></td>
+                  <td class="fin-numeric font-semibold"><strong>{{ etb(getWeeklyTotal('transfer_total')) }}</strong></td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="visibleWeeklyData.length + 2" class="withdrawal">Saving Withdrawal</th>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('withdrawal_mandatory', null, 'Withdraw from Mandatory', weeklyYear)">Withdraw from Mandatory</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('withdrawal_mandatory', null, 'Withdraw from Mandatory', d.period)">{{ etb(d.withdrawal_mandatory) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('withdrawal_mandatory')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('withdrawal_voluntary', null, 'Withdraw from Voluntary', weeklyYear)">Withdraw from Voluntary</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('withdrawal_voluntary', null, 'Withdraw from Voluntary', d.period)">{{ etb(d.withdrawal_voluntary) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('withdrawal_voluntary')) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('withdrawal_total', null, 'Withdrawal Total', weeklyYear)"><strong>Withdrawal Total</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('withdrawal_total', null, 'Withdrawal Total', d.period)">{{ etb(d.withdrawal_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('withdrawal_total')) }}</td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="visibleWeeklyData.length + 2" class="expense">Expense</th>
+                </tr>
+                <tr *ngFor="let name of weeklyExpenseAccountNames">
+                  <td class="row-label clickable-label" (click)="openYearDetail('expense_account', name, name, weeklyYear)">{{ name }}</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('expense_account', name, name, d.period)">
+                    {{ etb(getAccountWeekAmount(w.expenseAccounts, name, d.period)) }}
+                  </td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyAccountTotal(w.expenseAccounts, name)) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('expense_total', null, 'Expense Total', weeklyYear)"><strong>Expense Total</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('expense_total', null, 'Expense Total', d.period)">{{ etb(d.expense_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('expense_total')) }}</td>
+                </tr>
+                <tr>
+                  <td class="row-label clickable-label"
+                      (click)="openYearDetail('disbursement_total', null, 'Monthly Disbursement', weeklyYear)">Monthly Disbursement</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('disbursement_total', null, 'Monthly Disbursement', d.period)">{{ etb(d.disbursement_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('disbursement_total')) }}</td>
+                </tr>
+
+                <tr class="fin-table-section">
+                  <th [attr.colspan]="visibleWeeklyData.length + 2" class="income">Income</th>
+                </tr>
+                <tr *ngFor="let name of weeklyIncomeAccountNames">
+                  <td class="row-label clickable-label" (click)="openYearDetail('income_account', name, name, weeklyYear)">{{ name }}</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('income_account', name, name, d.period)">
+                    {{ etb(getAccountWeekAmount(w.incomeAccounts, name, d.period)) }}
+                  </td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyAccountTotal(w.incomeAccounts, name)) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('income_total', null, 'Total Income', weeklyYear)"><strong>Total Income</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('income_total', null, 'Total Income', d.period)">{{ etb(d.income_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('income_total')) }}</td>
+                </tr>
+                <tr class="fin-highlight">
+                  <td class="clickable-label"
+                      (click)="openYearDetail('expense_total', null, 'Total Expense', weeklyYear)"><strong>Total Expense</strong></td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric clickable-cell"
+                      (click)="openWeekDetail('expense_total', null, 'Total Expense', d.period)">{{ etb(d.expense_total) }}</td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('expense_total')) }}</td>
+                </tr>
+
+                <tr class="fin-profloss">
+                  <td>Net Profit/Loss</td>
+                  <td *ngFor="let d of visibleWeeklyData" class="fin-numeric" [class.negative]="(d.income_total - d.expense_total) < 0">
+                    {{ etb(d.income_total - d.expense_total) }}
+                  </td>
+                  <td class="fin-numeric font-semibold">{{ etb(getWeeklyTotal('income_total') - getWeeklyTotal('expense_total')) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

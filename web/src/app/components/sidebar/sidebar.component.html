@@ -1,0 +1,247 @@
+<div class="flex flex-col h-screen flex-shrink-0" style="width:260px;background:var(--primary,#0f2744)">
+
+  <!-- Brand -->
+  <div class="flex items-center gap-4 px-6 py-5" style="border-bottom:1px solid rgba(255,255,255,0.08)">
+    <div class="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden shrink-0" style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669))">
+      <ng-container *ngIf="settingsService.settings()['logo_url']; else defaultLogo">
+        <img [src]="settingsService.settings()['logo_url']" class="w-full h-full object-contain p-2" alt="Logo" />
+      </ng-container>
+      <ng-template #defaultLogo>
+        <mat-icon style="color:white;font-size:36px;width:36px;height:36px">account_balance</mat-icon>
+      </ng-template>
+    </div>
+    <div>
+      <p class="font-bold text-white text-base tracking-wider">{{ settingsService.settings()['company_name'] || 'SACCO' }}</p>
+      <p class="text-xs" style="color:#64b5f6">Management System</p>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <p class="text-xs font-semibold px-3 mb-2" style="color:#4a6fa1;letter-spacing:.1em">MAIN MENU</p>
+
+    <a routerLink="/dashboard" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">dashboard</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Dashboard</span>
+    </a>
+
+    <a routerLink="/members" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">group</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Member Registration</span>
+    </a>
+
+    <a routerLink="/saving" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">savings</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Saving</span>
+    </a>
+
+    <a routerLink="/share-purchase" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">precision_manufacturing</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Share Purchase</span>
+    </a>
+
+    <a routerLink="/withdrawal" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">payments</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Withdrawal</span>
+    </a>
+
+    <a routerLink="/transfers" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">swap_horiz</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Transfer</span>
+    </a>
+
+    <a routerLink="/loans/requests" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">request_quote</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Loan Requests</span>
+    </a>
+
+    <a routerLink="/loans" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">account_balance_wallet</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Loans</span>
+    </a>
+
+    <p class="text-xs font-semibold px-3 mt-6 mb-2" style="color:#4a6fa1;letter-spacing:.1em">REPORTS</p>
+    <div class="rounded-xl">
+      <a routerLink="/finance" routerLinkActive="nav-active" [routerLinkActiveOptions]="{exact:true}"
+         (click)="toggleFinance()"
+         class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+         [style.color]="(financeOpen ? '#fff' : '#94a3b8')">
+        <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200"
+             [class.nav-icon-active]="financeOpen">
+          <mat-icon style="font-size:18px;width:18px;height:18px">assessment</mat-icon>
+        </div>
+        <span class="text-sm font-medium flex-1">Finance</span>
+        <mat-icon class="transition-transform duration-200" [style.transform]="financeOpen ? 'rotate(90deg)' : 'rotate(0deg)'"
+                  style="font-size:16px;width:16px;height:16px;color:#4a6fa1">chevron_right</mat-icon>
+      </a>
+      <div *ngIf="financeOpen" class="ml-4 mt-1 space-y-1 border-l" style="border-color:rgba(255,255,255,0.1)">
+        <a routerLink="/finance/trial-balance" routerLinkActive="nav-active"
+           class="nav-item-sub flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer no-underline transition-all duration-200 text-sm"
+           style="color:#94a3b8">
+          <span class="w-1 h-1 rounded-full" style="background:#4a6fa1"></span>
+          <span>Trial Balance</span>
+        </a>
+        <a routerLink="/finance/income-statement" routerLinkActive="nav-active"
+           class="nav-item-sub flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer no-underline transition-all duration-200 text-sm"
+           style="color:#94a3b8">
+          <span class="w-1 h-1 rounded-full" style="background:#4a6fa1"></span>
+          <span>Income Statement</span>
+        </a>
+        <a routerLink="/finance/balance-sheet" routerLinkActive="nav-active"
+           class="nav-item-sub flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer no-underline transition-all duration-200 text-sm"
+           style="color:#94a3b8">
+          <span class="w-1 h-1 rounded-full" style="background:#4a6fa1"></span>
+          <span>Balance Sheet</span>
+        </a>
+        <a routerLink="/finance/retained-earnings" routerLinkActive="nav-active"
+           class="nav-item-sub flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer no-underline transition-all duration-200 text-sm"
+           style="color:#94a3b8">
+          <span class="w-1 h-1 rounded-full" style="background:#4a6fa1"></span>
+          <span>Statement of Changes in Equity</span>
+        </a>
+        <a routerLink="/finance/finance-report" routerLinkActive="nav-active"
+           class="nav-item-sub flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer no-underline transition-all duration-200 text-sm"
+           style="color:#94a3b8">
+          <span class="w-1 h-1 rounded-full" style="background:#4a6fa1"></span>
+          <span>Finance Report</span>
+        </a>
+        <a routerLink="/finance/cash-flow" routerLinkActive="nav-active"
+           class="nav-item-sub flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer no-underline transition-all duration-200 text-sm"
+           style="color:#94a3b8">
+          <span class="w-1 h-1 rounded-full" style="background:#4a6fa1"></span>
+          <span>Cash Flow</span>
+        </a>
+        <a routerLink="/finance/general-ledger" routerLinkActive="nav-active"
+           class="nav-item-sub flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer no-underline transition-all duration-200 text-sm"
+           style="color:#94a3b8">
+          <span class="w-1 h-1 rounded-full" style="background:#4a6fa1"></span>
+          <span>General Ledger</span>
+        </a>
+      </div>
+    </div>
+
+    <p class="text-xs font-semibold px-3 mt-6 mb-2" style="color:#4a6fa1;letter-spacing:.1em">LOOKUPS</p>
+    <a routerLink="/accounts" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">account_balance_wallet</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Accounts</span>
+    </a>
+
+    <a routerLink="/saving-types" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">category</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Saving Types</span>
+    </a>
+
+    <a routerLink="/loan-types" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">account_balance</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Loan Types</span>
+    </a>
+
+    <a routerLink="/regions" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">map</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Regions</span>
+    </a>
+
+    <a routerLink="/subcities" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">location_city</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Subcities</span>
+    </a>
+
+    <a routerLink="/educations" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">school</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Educations</span>
+    </a>
+
+    <a routerLink="/account-classifications" routerLinkActive="nav-active"
+       class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+       style="color:#94a3b8">
+      <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+        <mat-icon style="font-size:18px;width:18px;height:18px">category</mat-icon>
+      </div>
+      <span class="text-sm font-medium">Account Classifications</span>
+    </a>
+
+    <ng-container *ngIf="user$ | async as user">
+      <ng-container *ngIf="isAdmin(user)">
+        <p class="text-xs font-semibold px-3 mt-6 mb-2" style="color:#4a6fa1;letter-spacing:.1em">ADMINISTRATION</p>
+        <a routerLink="/user-management" routerLinkActive="nav-active"
+           class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+           style="color:#94a3b8">
+          <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+            <mat-icon style="font-size:18px;width:18px;height:18px">admin_panel_settings</mat-icon>
+          </div>
+          <span class="text-sm font-medium">User Management</span>
+        </a>
+        <a routerLink="/settings" routerLinkActive="nav-active"
+           class="nav-item flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer no-underline transition-all duration-200"
+           style="color:#94a3b8">
+          <div class="nav-icon w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200">
+            <mat-icon style="font-size:18px;width:18px;height:18px">settings</mat-icon>
+          </div>
+          <span class="text-sm font-medium">Settings</span>
+        </a>
+      </ng-container>
+    </ng-container>
+
+  </nav>
+
+  <!-- Footer -->
+  <div class="px-6 py-4" style="border-top:1px solid rgba(255,255,255,0.08)">
+    <p class="text-xs text-center" style="color:#4a6fa1">v1.0.0 &copy; 2026 SACCO System</p>
+  </div>
+</div>

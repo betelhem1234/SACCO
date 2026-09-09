@@ -1,0 +1,115 @@
+<div>
+  <!-- Header -->
+  <div class="px-6 py-5 flex items-center gap-3"
+       style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">payments</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Withdrawal' : 'Record New Withdrawal' }}</h2>
+      <p class="text-xs m-0" style="color:#ddd6fe">{{ editMode ? 'Update withdrawal details' : 'Enter withdrawal transaction details' }}</p>
+    </div>
+  </div>
+
+  <mat-dialog-content class="px-6 py-5">
+    <form [formGroup]="form" class="flex flex-col gap-3">
+
+      <!-- Member -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Select Member</mat-label>
+        <mat-select formControlName="memberId" required>
+          <mat-option *ngFor="let m of members$ | async" [value]="m.id">
+            {{ m.fullName }} ({{ m.idNumbe || m.memberid || 'No ID' }})
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix class="mr-2" style="color:#94a3b8">person</mat-icon>
+      </mat-form-field>
+
+      <!-- Saving Type -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Saving Type</mat-label>
+        <mat-select formControlName="savingTypeId" required>
+          <mat-option *ngFor="let st of savingTypes$ | async" [value]="st.id">
+            {{ st.name }}
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix class="mr-2" style="color:#94a3b8">category</mat-icon>
+      </mat-form-field>
+
+      <!-- Available Balance -->
+      <div *ngIf="availableBalance !== null" class="flex items-center gap-2 px-1 -mt-2 mb-1">
+        <span class="text-xs font-medium" [style.color]="balanceColor">
+          Available balance: {{ availableBalance | number:'1.2-2' }} ETB
+        </span>
+      </div>
+
+      <!-- Withdrawal policy hint -->
+      <div *ngIf="withdrawalLimit || withdrawalIntervalDays" class="flex flex-wrap items-center gap-2 px-1 -mt-2 mb-1">
+        <span *ngIf="withdrawalLimit" class="text-xs font-medium px-2 py-0.5 rounded-full" style="background:#ede9fe;color:#6d28d9">
+          Limit: {{ withdrawalLimit | number:'1.2-2' }} ETB / withdrawal
+        </span>
+        <span *ngIf="withdrawalIntervalDays" class="text-xs font-medium px-2 py-0.5 rounded-full" style="background:#ede9fe;color:#6d28d9">
+          Interval: once every {{ withdrawalIntervalDays }} day(s)
+        </span>
+        <span *ngIf="intervalRemainingDays() !== null && intervalRemainingDays()! > 0" class="text-xs font-medium px-2 py-0.5 rounded-full" style="background:#fee2e2;color:#b91c1c">
+          Next withdrawal in {{ intervalRemainingDays() }} day(s)
+        </span>
+      </div>
+
+      <!-- Amount & FTP row -->
+      <div class="flex gap-3">
+        <mat-form-field appearance="outline" class="w-1/2">
+          <mat-label>Amount (ETB)</mat-label>
+          <input matInput type="number" formControlName="amount" required />
+          <mat-icon matPrefix class="mr-2" style="color:#94a3b8">monetization_on</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-1/2">
+          <mat-label>FTP Reference</mat-label>
+          <input matInput formControlName="ftp" required />
+          <mat-icon matPrefix class="mr-2" style="color:#94a3b8">receipt</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <!-- Credit Bank Account -->
+      <!-- Insufficient balance error -->
+      <div *ngIf="availableBalance !== null && (form.get('amount')?.value || 0) > availableBalance" class="flex items-center gap-2 px-1 -mt-1 mb-1">
+        <span class="text-xs font-medium" style="color:#ef4444">
+          Insufficient balance. Available: {{ availableBalance | number:'1.2-2' }} ETB
+        </span>
+      </div>
+
+      <!-- Credit Bank Account -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Credit Bank Account</mat-label>
+        <mat-select formControlName="bankId" required>
+          <mat-option *ngFor="let acc of bankAccounts$ | async" [value]="acc.id">
+            {{ acc.name }} <span class="text-xs opacity-70">({{ acc.accountNumber || 'no #' }})</span>
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix class="mr-2" style="color:#94a3b8">account_balance</mat-icon>
+      </mat-form-field>
+
+      <!-- Date -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Date</mat-label>
+        <input matInput type="date" formControlName="date" required />
+      </mat-form-field>
+
+      <!-- Remark -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Remark</mat-label>
+        <input matInput formControlName="remark" />
+        <mat-icon matPrefix class="mr-2" style="color:#94a3b8">notes</mat-icon>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button [disabled]="!form.valid || (availableBalance !== null && (form.get('amount')?.value || 0) > availableBalance) || overLimit() || (intervalRemainingDays() !== null && intervalRemainingDays()! > 0)" (click)="submit()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:white;box-shadow:0 4px 12px rgba(124,58,237,0.35)">
+      {{ editMode ? 'Update Withdrawal' : 'Record Withdrawal' }}
+    </button>
+  </mat-dialog-actions>
+</div>

@@ -1,0 +1,42 @@
+    <div>
+      <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+          <span class="material-icons text-white" style="font-size:20px">location_city</span>
+        </div>
+        <div>
+          <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Subcity' : 'Register New Subcity' }}</h2>
+          <p class="text-xs m-0" style="color:#93c5fd">{{ editMode ? 'Update subcity details' : 'Fill in subcity details below' }}</p>
+        </div>
+      </div>
+      <mat-dialog-content class="px-6 py-5">
+        <form [formGroup]="form" class="flex flex-col gap-3">
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Subcity Name</mat-label>
+            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">location_city</mat-icon>
+            <input matInput formControlName="name" required />
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Region</mat-label>
+            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">map</mat-icon>
+            <mat-select formControlName="state_id" required>
+              <mat-option *ngFor="let r of regions$ | async" [value]="r.id">
+                {{ r.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Description</mat-label>
+            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">description</mat-icon>
+            <input matInput formControlName="description" />
+          </mat-form-field>
+        </form>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
+        <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+        <button [disabled]="!form.valid" (click)="submit()"
+                class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+                style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white;box-shadow:0 4px 12px rgba(30,58,95,0.3)">
+          {{ editMode ? 'Update Subcity' : 'Save Subcity' }}
+        </button>
+      </mat-dialog-actions>
+    </div>

@@ -1,19 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { Saving, Member, SavingType } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { deleteSaving } from '../../state/savings.actions';
-import { selectAllSavings } from '../../state/savings.selectors';
-import { selectAllMembers } from '../../state/members.selectors';
-import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups.selectors';
+import { deleteSaving, approveSaving, rejectSaving } from '../../state/savings/savings.actions';
+import { selectAllSavings } from '../../state/savings/savings.selectors';
+import { selectAllMembers } from '../../state/members/members.selectors';
+import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups/lookups.selectors';
 import { combineLatest, map } from 'rxjs';
 import { SavingFormComponent } from '../saving-form/saving-form.component';
 import { GenericDetailDialogComponent, DetailDialogData } from '../generic-detail-dialog/generic-detail-dialog.component';
@@ -34,146 +35,18 @@ interface EnrichedSaving extends Saving {
     MatButtonModule,
     MatIconModule,
     MatTableModule,
+    MatPaginatorModule,
     MatDialogModule,
     MatTooltipModule
   ],
-  template: `
-    <section class="p-6" style="background:#f0f4f8;min-height:100%">
-      <div class="max-w-7xl mx-auto">
-
-        <!-- Page Header -->
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style="background:linear-gradient(135deg,#10b981,#059669)">
-              <span class="material-icons text-white" style="font-size:20px">savings</span>
-            </div>
-            <div>
-              <h1 class="text-xl font-bold" style="color:#1e293b">Savings Management</h1>
-              <p class="text-xs" style="color:#64748b">Record and manage member savings</p>
-            </div>
-          </div>
-          <button (click)="onAdd()"
-                  class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer transition-all duration-200"
-                  style="background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 12px rgba(16,185,129,0.35)">
-            <span class="material-icons" style="font-size:18px">add</span>
-            Record Saving
-          </button>
-        </div>
-
-        <!-- Table Card -->
-        <div class="bg-white rounded-2xl overflow-hidden shadow-sm border" style="border-color:#e2e8f0">
-          <table mat-table [dataSource]="dataSource" class="w-full">
-
-            <ng-container matColumnDef="memberId">
-              <th mat-header-cell *matHeaderCellDef class="pl-6">Member ID</th>
-              <td mat-cell *matCellDef="let saving" class="pl-6">
-                <span class="text-sm font-mono font-semibold" style="color:#1e3a5f">{{ saving.memberNumber }}</span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="memberName">
-              <th mat-header-cell *matHeaderCellDef>Member Name</th>
-              <td mat-cell *matCellDef="let saving">
-                <div class="flex items-center gap-2">
-                  <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                       style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
-                    {{ (saving.memberName || '?').charAt(0).toUpperCase() }}
-                  </div>
-                  <span class="text-sm font-medium" style="color:#1e293b">{{ saving.memberName }}</span>
-                </div>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="savingType">
-              <th mat-header-cell *matHeaderCellDef>Type</th>
-              <td mat-cell *matCellDef="let saving">
-                <span class="px-2.5 py-1 rounded-full text-xs font-semibold"
-                      [ngStyle]="getTypeBadgeStyle(saving.savingType)">
-                  {{ saving.savingTypeName }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="accountName">
-              <th mat-header-cell *matHeaderCellDef>Account</th>
-              <td mat-cell *matCellDef="let saving">
-                <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
-                  {{ saving.accountDisplayName }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="amount">
-              <th mat-header-cell *matHeaderCellDef>Amount</th>
-              <td mat-cell *matCellDef="let saving">
-                <span class="text-sm font-bold" style="color:#059669">
-                  {{ saving.savingAmount | currency:'ETB':'symbol':'1.2-2' }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="ftp">
-              <th mat-header-cell *matHeaderCellDef>FTP Ref</th>
-              <td mat-cell *matCellDef="let saving">
-                <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
-                  {{ saving.ftp }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="date">
-              <th mat-header-cell *matHeaderCellDef>Date</th>
-              <td mat-cell *matCellDef="let saving">
-                <span class="text-sm" style="color:#64748b">{{ saving.savingDate | date }}</span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let saving">
-                <div class="flex items-center gap-1">
-                  <button mat-icon-button matTooltip="View" (click)="onView(saving)"
-                          class="!w-8 !h-8" style="color:#059669">
-                    <span class="material-icons" style="font-size:18px">visibility</span>
-                  </button>
-                  <button mat-icon-button matTooltip="Edit" (click)="onEdit(saving)"
-                          class="!w-8 !h-8" style="color:#1e3a5f">
-                    <span class="material-icons" style="font-size:18px">edit</span>
-                  </button>
-                  <button mat-icon-button matTooltip="Print CRV" (click)="onPrint(saving)"
-                          class="!w-8 !h-8" style="color:#1e3a5f">
-                    <span class="material-icons" style="font-size:18px">print</span>
-                  </button>
-                  <button mat-icon-button matTooltip="Delete" (click)="onDelete(saving.id)"
-                          class="!w-8 !h-8" style="color:#ef4444">
-                    <span class="material-icons" style="font-size:18px">delete_outline</span>
-                  </button>
-                </div>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                class="transition-all duration-150 cursor-pointer"></tr>
-          </table>
-
-          <div *ngIf="dataSource.data.length === 0"
-               class="flex flex-col items-center justify-center py-16 text-center">
-            <span class="material-icons mb-3" style="font-size:48px;color:#cbd5e1">savings</span>
-            <p class="font-medium" style="color:#64748b">No savings recorded yet</p>
-            <p class="text-sm mt-1" style="color:#94a3b8">Click "Record Saving" to get started</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  `,
-  styles: []
+  templateUrl: './saving-list.component.html',
+  styleUrls: ['./saving-list.component.css']
 })
-export class SavingListComponent implements OnInit {
+export class SavingListComponent implements OnInit, AfterViewInit {
   savings$!: Observable<EnrichedSaving[]>;
-  displayedColumns: string[] = ['memberId', 'memberName', 'savingType', 'accountName', 'amount', 'ftp', 'date', 'actions'];
+  displayedColumns: string[] = ['memberId', 'memberName', 'savingType', 'accountName', 'amount', 'ftp', 'date', 'status', 'actions'];
   dataSource = new MatTableDataSource<EnrichedSaving>();
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   constructor(private store: Store<AppState>, private dialog: MatDialog) { }
 
@@ -194,7 +67,7 @@ export class SavingListComponent implements OnInit {
             : 'Unknown account';
           return {
             ...saving,
-            memberNumber: member?.idNumbe ?? '—',
+            memberNumber: member?.idNumbe || member?.memberid || '—',
             memberName: member ? member.fullName : 'Unknown Member',
             savingTypeName: type ? type.name : 'Unknown Type',
             accountDisplayName
@@ -205,15 +78,43 @@ export class SavingListComponent implements OnInit {
 
     this.savings$.subscribe(savings => {
       this.dataSource.data = savings;
+      this.dataSource.paginator = this.paginator;
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator;
   }
 
   getTypeBadgeStyle(typeId: string): Record<string, string> {
     return { background: '#dbeafe', color: '#1d4ed8' };
   }
 
+  getStatusBadgeStyle(status?: string): Record<string, string> {
+    switch (status ?? 'POSTED') {
+      case 'PENDING':
+        return { background: '#fef3c7', color: '#b45309' };
+      case 'REJECTED':
+        return { background: '#fee2e2', color: '#b91c1c' };
+      default:
+        return { background: '#d1fae5', color: '#047857' };
+    }
+  }
+
+  onApprove(row: EnrichedSaving) {
+    if (row.id && confirm(`Approve this saving for ${row.memberName} and post to ledger?`)) {
+      this.store.dispatch(approveSaving({ id: row.id }));
+    }
+  }
+
+  onReject(row: EnrichedSaving) {
+    if (row.id && confirm(`Reject this saving for ${row.memberName}?`)) {
+      this.store.dispatch(rejectSaving({ id: row.id }));
+    }
+  }
+
   onAdd() {
-    this.dialog.open(SavingFormComponent, { width: '500px' });
+    this.dialog.open(SavingFormComponent, { width: '90vw', maxWidth: '1000px' });
   }
 
   onView(row: EnrichedSaving) {
@@ -230,6 +131,7 @@ export class SavingListComponent implements OnInit {
         { key: 'savingAmount', label: 'Amount', type: 'currency' },
         { key: 'ftp', label: 'FTP Ref', type: 'text' },
         { key: 'savingDate', label: 'Date', type: 'date' },
+        { key: 'status', label: 'Status', type: 'text' },
         { key: 'remark', label: 'Remark', type: 'text' },
         { key: 'createdAt', label: 'Recorded At', type: 'date' },
       ]
@@ -248,8 +150,9 @@ export class SavingListComponent implements OnInit {
       accountId: row.accountId,
       remark: row.remark,
       createdAt: row.createdAt,
+      status: row.status,
     };
-    this.dialog.open(SavingFormComponent, { width: '500px', data: { saving } });
+    this.dialog.open(SavingFormComponent, { width: '90vw', maxWidth: '1000px', data: { saving } });
   }
   onPrint(saving: EnrichedSaving) {
     window.alert(`Printing CRV for ${saving.memberName} - Amount: ${saving.savingAmount}`);

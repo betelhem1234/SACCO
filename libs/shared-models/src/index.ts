@@ -3,3 +3,8 @@ export * from './lib/account.model';
 export * from './lib/withdrawal.model';
 export * from './lib/loan-type.model';
 export * from './lib/loan.model';
+export * from './lib/setting.model';
+export * from './lib/share.model';
+export * from './lib/transfer.model';
+export * from './lib/finance.model';
+export * from './lib/account-classification.model';

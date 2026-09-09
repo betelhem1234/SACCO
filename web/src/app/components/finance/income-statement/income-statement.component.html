@@ -1,0 +1,161 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#10b981,#047857)">
+      <span class="material-icons text-white" style="font-size:20px">trending_up</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Income Statement</h1>
+      <p class="text-xs" style="color:#64748b">{{ periodLabel(presetId) }} · {{ report.revenue.length }} revenue &amp; {{ report.expenses.length }} expense accounts</p>
+    </div>
+    <mat-form-field appearance="outline" class="min-w-[190px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#10b981,#047857)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ periodLabel(presetId) }}</span>
+  </p>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <div class="xl:col-span-2 space-y-5">
+      <!-- Revenue -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#065f46">Revenue</h2>
+          <span class="fin-section-badge" style="background:#d1fae5;color:#065f46">{{ report.revenue.length }} account(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Number</th>
+                <th class="fin-text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of report.revenue">
+                <td>
+                  <a *ngIf="row.accountId; else revNoLink"
+                     [routerLink]="['/finance/account-ledger', row.accountId]"
+                     [queryParams]="ledgerParams()"
+                     class="no-underline hover:underline font-medium"
+                     style="color:#047857;cursor:pointer">{{ row.accountName }}</a>
+                  <ng-template #revNoLink>
+                    <span class="font-medium" style="color:#1e293b">{{ row.accountName }}</span>
+                  </ng-template>
+                </td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ row.accountNumber || '—' }}</td>
+                <td class="fin-numeric font-semibold" style="color:#047857">{{ etb(row.amount) }}</td>
+              </tr>
+              <tr *ngIf="report.revenue.length === 0">
+                <td colspan="3" class="text-center py-6" style="color:#94a3b8">No revenue recorded in this period.</td>
+              </tr>
+              <tr class="fin-total-row">
+                <td colspan="2">Total revenue</td>
+                <td class="fin-numeric">{{ etb(report.totalRevenue) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Expenses -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#991b1b">Expenses</h2>
+          <span class="fin-section-badge" style="background:#fee2e2;color:#991b1b">{{ report.expenses.length }} account(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Number</th>
+                <th class="fin-text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of report.expenses">
+                <td>
+                  <a *ngIf="row.accountId; else expNoLink"
+                     [routerLink]="['/finance/account-ledger', row.accountId]"
+                     [queryParams]="ledgerParams()"
+                     class="no-underline hover:underline font-medium"
+                     style="color:#b91c1c;cursor:pointer">{{ row.accountName }}</a>
+                  <ng-template #expNoLink>
+                    <span class="font-medium" style="color:#1e293b">{{ row.accountName }}</span>
+                  </ng-template>
+                </td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ row.accountNumber || '—' }}</td>
+                <td class="fin-numeric font-semibold" style="color:#b91c1c">{{ etb(row.amount) }}</td>
+              </tr>
+              <tr *ngIf="report.expenses.length === 0">
+                <td colspan="3" class="text-center py-6" style="color:#94a3b8">No expenses recorded in this period.</td>
+              </tr>
+              <tr class="fin-total-row">
+                <td colspan="2">Total expenses</td>
+                <td class="fin-numeric">{{ etb(report.totalExpenses) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Net income summary -->
+    <div class="space-y-5">
+      <div class="fin-card p-6" style="background:linear-gradient(160deg,#10b981 0%,#047857 100%)">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:#a7f3d0">Net income</p>
+        <p class="text-3xl font-extrabold text-white">{{ etb(report.netIncome) }}</p>
+        <p class="text-xs mt-1" style="color:#d1fae5">Revenue minus expenses for this period</p>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Breakdown</h3>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Total revenue</dt>
+            <dd class="font-semibold" style="color:#047857">{{ etb(report.totalRevenue) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Total expenses</dt>
+            <dd class="font-semibold" style="color:#b91c1c">({{ etb(report.totalExpenses) }})</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Net income</dt>
+            <dd class="font-extrabold" style="color:#065f46">{{ etb(report.netIncome) }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Profit margin</h3>
+        <p class="text-3xl font-extrabold" style="color:#1e293b">{{ margin(report.totalRevenue, report.netIncome) }}</p>
+        <p class="text-xs mt-1" style="color:#64748b">Net income as a percentage of revenue</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <div *ngIf="loading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#64748b">Loading income statement…</p>
+    </div>
+  </div>
+</ng-template>

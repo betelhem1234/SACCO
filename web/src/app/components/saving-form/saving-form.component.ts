@@ -13,10 +13,11 @@ import { map } from 'rxjs/operators';
 
 import { Saving, Member, Account, AccountCategory, SavingType } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { addSaving, updateSaving } from '../../state/savings.actions';
-import { selectAllMembers } from '../../state/members.selectors';
-import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups.selectors';
-import { loadAccounts, loadSavingTypes } from '../../state/lookups.actions';
+import { addSaving, updateSaving } from '../../state/savings/savings.actions';
+import { selectAllMembers } from '../../state/members/members.selectors';
+import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups/lookups.selectors';
+import { loadAccounts, loadSavingTypes } from '../../state/lookups/lookups.actions';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-saving-form',
@@ -31,95 +32,8 @@ import { loadAccounts, loadSavingTypes } from '../../state/lookups.actions';
     MatDialogModule,
     ReactiveFormsModule
   ],
-  template: `
-    <div>
-      <!-- Dialog Header -->
-      <div class="px-6 py-5 flex items-center gap-3"
-           style="background:linear-gradient(135deg,#065f46,#059669)">
-        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
-          <span class="material-icons text-white" style="font-size:20px">savings</span>
-        </div>
-        <div>
-          <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Saving' : 'Record New Saving' }}</h2>
-          <p class="text-xs m-0" style="color:#a7f3d0">{{ editMode ? 'Update transaction details' : 'Enter saving transaction details' }}</p>
-        </div>
-      </div>
-
-      <!-- Form Body -->
-      <mat-dialog-content class="px-6 py-5">
-        <form [formGroup]="savingForm" class="flex flex-col gap-3">
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Select Member</mat-label>
-            <mat-select formControlName="memberId">
-              <mat-option *ngFor="let member of members$ | async" [value]="member.id">
-                {{ member.fullName }} ({{ member.idNumbe || 'No ID' }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">person</mat-icon>
-          </mat-form-field>
-
-          <div class="flex gap-3">
-            <mat-form-field appearance="outline" class="w-1/2">
-              <mat-label>Saving Type</mat-label>
-              <mat-select formControlName="savingType">
-                <mat-option *ngFor="let st of savingTypes$ | async" [value]="st.id">
-                  {{ st.name }}
-                </mat-option>
-              </mat-select>
-              <mat-icon matPrefix class="mr-2" style="color:#94a3b8">category</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="w-1/2">
-              <mat-label>Deposit account</mat-label>
-              <mat-select formControlName="accountId">
-                <mat-option *ngFor="let acc of depositAccounts$ | async" [value]="acc.id">
-                  {{ acc.name }} <span class="text-xs opacity-70">({{ acc.accountNumber || 'no #' }})</span>
-                </mat-option>
-              </mat-select>
-              <mat-icon matPrefix class="mr-2" style="color:#94a3b8">account_balance_wallet</mat-icon>
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Amount (ETB)</mat-label>
-            <input matInput type="number" formControlName="savingAmount" required />
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">monetization_on</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>FTP Reference</mat-label>
-            <input matInput formControlName="ftp" required />
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">receipt</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Remark</mat-label>
-            <input matInput formControlName="remark" />
-            <mat-icon matPrefix class="mr-2" style="color:#94a3b8">notes</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Date</mat-label>
-            <input matInput type="date" formControlName="savingDate" required/>
-          </mat-form-field>
-        </form>
-      </mat-dialog-content>
-
-      <!-- Actions -->
-      <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
-        <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
-        <button [disabled]="!savingForm.valid" (click)="submitSaving()"
-                class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
-                style="background:linear-gradient(135deg,#059669,#047857);color:white;box-shadow:0 4px 12px rgba(5,150,105,0.35)">
-          {{ editMode ? 'Update Saving' : 'Record Saving' }}
-        </button>
-      </mat-dialog-actions>
-    </div>
-  `,
-  styles: [`
-    mat-dialog-content { min-width: 420px; }
-  `]
+  templateUrl: './saving-form.component.html',
+  styleUrls: ['./saving-form.component.css']
 })
 export class SavingFormComponent implements OnInit {
   savingForm!: FormGroup;
@@ -128,12 +42,19 @@ export class SavingFormComponent implements OnInit {
   depositAccounts$!: Observable<Account[]>;
   savingTypes$!: Observable<SavingType[]>;
   editMode = false;
+  /** Minimum required amount hint for the selected type/date (null when type has no minimum requirement shown). */
+  requiredMin: { amount: number; date: number; typeName: string } | null = null;
+
+  get minRequired(): number {
+    return this.requiredMin?.amount ?? 0;
+  }
 
   constructor(
     private store: Store<AppState>,
     private fb: FormBuilder,
+    private api: ApiService,
     private dialogRef: MatDialogRef<SavingFormComponent>,
-    @Optional() @Inject(MAT_DIALOG_DATA) public data: { saving?: Saving } | undefined
+    @Optional() @Inject(MAT_DIALOG_DATA) public data: { saving?: Saving; memberId?: string } | undefined
   ) { }
 
   ngOnInit(): void {
@@ -158,7 +79,7 @@ export class SavingFormComponent implements OnInit {
       : new Date().toISOString().split('T')[0];
 
     this.savingForm = this.fb.group({
-      memberId: [saving?.memberId ?? '', Validators.required],
+      memberId: [saving?.memberId ?? this.data?.memberId ?? '', Validators.required],
       savingType: [saving?.savingType ?? '', Validators.required],
       accountId: [saving?.accountId ?? '', Validators.required],
       savingAmount: [saving?.savingAmount ?? '', [Validators.required, Validators.min(1)]],
@@ -166,6 +87,54 @@ export class SavingFormComponent implements OnInit {
       remark: [saving?.remark ?? ''],
       savingDate: [dateStr, Validators.required],
     });
+
+    this.savingTypes$.subscribe((types) => {
+      this.types = types ?? [];
+      this.refreshMinimum();
+    });
+    this.savingForm.get('savingType')?.valueChanges.subscribe(() => this.refreshMinimum(true));
+    this.savingForm.get('savingDate')?.valueChanges.subscribe(() => this.refreshMinimum());
+  }
+
+  private types: SavingType[] = [];
+
+  /** Resolve the minimum amount the selected type requires on the selected date and surface it in the form. */
+  private refreshMinimum(autoFill: boolean = false): void {
+    const typeId = this.savingForm.get('savingType')?.value as string | undefined;
+    const dateRaw = this.savingForm.get('savingDate')?.value as string | undefined;
+    this.requiredMin = null;
+    if (!typeId || !dateRaw) return;
+
+    const type = this.types.find((t) => t.id === typeId);
+    if (!type) return;
+
+    const date = new Date(dateRaw).getTime();
+    const amountCtrl = this.savingForm.get('savingAmount');
+
+    const apply = (amount: number) => {
+      if (type!.isMandatory) {
+        this.requiredMin = { amount, date, typeName: type!.name };
+      }
+      const min = Math.max(1, amount ?? 0);
+      amountCtrl?.setValidators([Validators.required, Validators.min(min)]);
+      amountCtrl?.updateValueAndValidity();
+      if (autoFill && (amountCtrl?.value === null || amountCtrl?.value === '')) {
+        amountCtrl?.setValue(amount);
+      }
+    };
+
+    if (type.isMandatory) {
+      this.api.getSavingTypeHistory(type.id).subscribe({
+        next: (history) => {
+          const sorted = [...(history ?? [])].filter((h) => h.effectiveFrom <= date)
+            .sort((a, b) => b.effectiveFrom - a.effectiveFrom);
+          apply(sorted.length > 0 ? sorted[0].amount : (type.minimumAmount ?? 0));
+        },
+        error: () => apply(type.minimumAmount ?? 0),
+      });
+    } else {
+      apply(type.minimumAmount ?? 0);
+    }
   }
 
   submitSaving() {

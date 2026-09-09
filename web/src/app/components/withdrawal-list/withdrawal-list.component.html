@@ -1,0 +1,108 @@
+    <section class="p-6" style="background:#f0f4f8;min-height:100%">
+      <div class="max-w-full mx-auto">
+        <!-- Header -->
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                 style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">
+              <span class="material-icons text-white" style="font-size:20px">payments</span>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold" style="color:#1e293b">Withdrawal Register</h1>
+              <p class="text-xs" style="color:#64748b">Manage member withdrawals</p>
+            </div>
+          </div>
+          <button (click)="onAdd()"
+                  class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer text-white"
+                  style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">
+            <span class="material-icons" style="font-size:18px">add</span> Add Withdrawal
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border" style="border-color:#e2e8f0">
+          <table mat-table [dataSource]="dataSource" class="w-full">
+
+            <ng-container matColumnDef="memberName">
+              <th mat-header-cell *matHeaderCellDef class="pl-6">Member</th>
+              <td mat-cell *matCellDef="let row" class="pl-6 font-medium">{{ row.memberName }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="savingTypeName">
+              <th mat-header-cell *matHeaderCellDef>Saving Type</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
+                  {{ row.savingTypeName }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef>Amount (ETB)</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="font-semibold" style="color:#7c3aed">{{ row.amount | number:'1.2-2' }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="ftp">
+              <th mat-header-cell *matHeaderCellDef>FTP Ref</th>
+              <td mat-cell *matCellDef="let row">{{ row.ftp }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="bankName">
+              <th mat-header-cell *matHeaderCellDef>Credit Bank Account</th>
+              <td mat-cell *matCellDef="let row">{{ row.bankName }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let row">{{ row.date | date:'yyyy-MM-dd' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full"
+                      [ngStyle]="getStatusBadgeStyle(row.status)">
+                  {{ row.status || 'POSTED' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+              <td mat-cell *matCellDef="let row" class="text-right pr-6 gap-1">
+                <button mat-icon-button matTooltip="View" (click)="onView(row)" class="!w-8 !h-8" style="color:#059669">
+                  <span class="material-icons" style="font-size:18px">visibility</span>
+                </button>
+                <button *ngIf="row.status === 'PENDING'" mat-icon-button matTooltip="Approve" (click)="onApprove(row)" class="!w-8 !h-8" style="color:#059669">
+                  <span class="material-icons" style="font-size:18px">check_circle</span>
+                </button>
+                <button *ngIf="row.status === 'PENDING'" mat-icon-button matTooltip="Reject" (click)="onReject(row)" class="!w-8 !h-8" style="color:#ef4444">
+                  <span class="material-icons" style="font-size:18px">cancel</span>
+                </button>
+                <button *ngIf="row.status !== 'POSTED'" mat-icon-button matTooltip="Edit" (click)="onEdit(row)" class="!w-8 !h-8" style="color:#7c3aed">
+                  <span class="material-icons" style="font-size:18px">edit</span>
+                </button>
+                <button *ngIf="row.status !== 'POSTED'" mat-icon-button matTooltip="Delete" (click)="onDelete(row)" class="!w-8 !h-8" style="color:#ef4444">
+                  <span class="material-icons" style="font-size:18px">delete_outline</span>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          </table>
+
+          <mat-paginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                         [pageSize]="10" [length]="dataSource.data.length"
+                         [style.display]="dataSource.data.length > 0 ? '' : 'none'">
+          </mat-paginator>
+
+          <div *ngIf="dataSource.data.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+            <span class="material-icons mb-3" style="font-size:48px;color:#cbd5e1">payments</span>
+            <p class="font-medium" style="color:#64748b">No withdrawals recorded yet</p>
+          </div>
+        </div>
+      </div>
+    </section>

@@ -1,0 +1,157 @@
+<section class="p-6" style="background:#f0f4f8;min-height:100%">
+  <div class="max-w-full mx-auto">
+
+    <!-- Header -->
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
+          <mat-icon style="color:white;font-size:20px">precision_manufacturing</mat-icon>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold" style="color:#1e293b">Share Management</h1>
+          <p class="text-xs" style="color:#64748b">Manage member share subscriptions and purchases</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group (selectedTabChange)="onTabChange($event)">
+      <mat-tab label="Subscriptions">
+        <ng-template matTabContent>
+          <div class="mt-4">
+            <div class="flex items-center gap-3 mb-4">
+              <button (click)="onAddSubscription()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer text-white" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
+                <mat-icon style="font-size:18px">add</mat-icon> New Subscription
+              </button>
+              <span *ngIf="subscriptionDataSource.data.length > 0" class="text-sm" style="color:#64748b">{{ subscriptionDataSource.data.length }} records</span>
+            </div>
+
+            <div class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border" style="border-color:#e2e8f0">
+              <table mat-table [dataSource]="subscriptionDataSource" class="w-full">
+                <ng-container matColumnDef="memberIdNumber">
+                  <th mat-header-cell *matHeaderCellDef class="pl-6">Member ID</th>
+                  <td mat-cell *matCellDef="let r" class="pl-6 font-mono text-sm font-semibold" style="color:#1e3a5f">{{ r.memberIdNumber }}</td>
+                </ng-container>
+                <ng-container matColumnDef="memberName">
+                  <th mat-header-cell *matHeaderCellDef>Member</th>
+                  <td mat-cell *matCellDef="let r" class="font-medium">{{ r.memberName }}</td>
+                </ng-container>
+                <ng-container matColumnDef="units">
+                  <th mat-header-cell *matHeaderCellDef>Units</th>
+                  <td mat-cell *matCellDef="let r">{{ r.units }}</td>
+                </ng-container>
+                <ng-container matColumnDef="totalAmount">
+                  <th mat-header-cell *matHeaderCellDef>Total Amount</th>
+                  <td mat-cell *matCellDef="let r" style="color:#059669;font-weight:600">{{ r.totalAmount | number:'1.2-2' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="subscriptionDate">
+                  <th mat-header-cell *matHeaderCellDef>Date</th>
+                  <td mat-cell *matCellDef="let r">{{ r.subscriptionDate | date:'shortDate' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                  <td mat-cell *matCellDef="let r" class="text-right pr-6">
+                    <button mat-icon-button matTooltip="Edit" (click)="onEditSubscription(r)" class="!w-8 !h-8" style="color:#1e3a5f">
+                      <mat-icon style="font-size:18px">edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Delete" (click)="onDeleteSubscription(r)" class="!w-8 !h-8" style="color:#ef4444">
+                      <mat-icon style="font-size:18px">delete_outline</mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="subscriptionColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: subscriptionColumns;"></tr>
+              </table>
+
+              <mat-paginator #subPaginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                             [pageSize]="10" [length]="subscriptionDataSource.data.length"
+                             [style.display]="subscriptionDataSource.data.length > 0 ? '' : 'none'">
+              </mat-paginator>
+
+              <div *ngIf="subscriptionDataSource.data.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+                <mat-icon style="font-size:48px;color:#cbd5e1;width:48px;height:48px">assignment</mat-icon>
+                <p class="font-medium mt-3" style="color:#64748b">No subscriptions recorded yet</p>
+                <p class="text-sm mt-1" style="color:#94a3b8">Click "New Subscription" to add one</p>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </mat-tab>
+
+      <mat-tab label="Purchases">
+        <ng-template matTabContent>
+          <div class="mt-4">
+            <div class="flex items-center gap-3 mb-4">
+              <button (click)="onAddPurchase()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer text-white" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+                <mat-icon style="font-size:18px">add</mat-icon> New Purchase
+              </button>
+              <span *ngIf="purchaseDataSource.data.length > 0" class="text-sm" style="color:#64748b">{{ purchaseDataSource.data.length }} records</span>
+            </div>
+
+            <div class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border" style="border-color:#e2e8f0">
+              <table mat-table [dataSource]="purchaseDataSource" class="w-full">
+                <ng-container matColumnDef="memberIdNumber">
+                  <th mat-header-cell *matHeaderCellDef class="pl-6">Member ID</th>
+                  <td mat-cell *matCellDef="let r" class="pl-6 font-mono text-sm font-semibold" style="color:#1e3a5f">{{ r.memberIdNumber }}</td>
+                </ng-container>
+                <ng-container matColumnDef="memberName">
+                  <th mat-header-cell *matHeaderCellDef>Member</th>
+                  <td mat-cell *matCellDef="let r" class="font-medium">{{ r.memberName }}</td>
+                </ng-container>
+                <ng-container matColumnDef="units">
+                  <th mat-header-cell *matHeaderCellDef>Units</th>
+                  <td mat-cell *matCellDef="let r">{{ r.units }}</td>
+                </ng-container>
+                <ng-container matColumnDef="totalAmount">
+                  <th mat-header-cell *matHeaderCellDef>Amount</th>
+                  <td mat-cell *matCellDef="let r" style="color:#059669;font-weight:600">{{ r.totalAmount | number:'1.2-2' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="serviceFee">
+                  <th mat-header-cell *matHeaderCellDef>Service Fee</th>
+                  <td mat-cell *matCellDef="let r" style="color:#dc2626">{{ r.serviceFee | number:'1.2-2' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="transactionReference">
+                  <th mat-header-cell *matHeaderCellDef>Trans Ref</th>
+                  <td mat-cell *matCellDef="let r">
+                    <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">{{ r.transactionReference || '—' }}</span>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="purchaseDate">
+                  <th mat-header-cell *matHeaderCellDef>Date</th>
+                  <td mat-cell *matCellDef="let r">{{ r.purchaseDate | date:'shortDate' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
+                  <td mat-cell *matCellDef="let r" class="text-right pr-6">
+                    <button mat-icon-button matTooltip="Edit" (click)="onEditPurchase(r)" class="!w-8 !h-8" style="color:#1e3a5f">
+                      <mat-icon style="font-size:18px">edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Delete" (click)="onDeletePurchase(r)" class="!w-8 !h-8" style="color:#ef4444">
+                      <mat-icon style="font-size:18px">delete_outline</mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="purchaseColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: purchaseColumns;"></tr>
+              </table>
+
+              <mat-paginator #purchasePaginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                             [pageSize]="10" [length]="purchaseDataSource.data.length"
+                             [style.display]="purchaseDataSource.data.length > 0 ? '' : 'none'">
+              </mat-paginator>
+
+              <div *ngIf="purchaseDataSource.data.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+                <mat-icon style="font-size:48px;color:#cbd5e1;width:48px;height:48px">shopping_cart</mat-icon>
+                <p class="font-medium mt-3" style="color:#64748b">No purchases recorded yet</p>
+                <p class="text-sm mt-1" style="color:#94a3b8">Click "New Purchase" to add one</p>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</section>

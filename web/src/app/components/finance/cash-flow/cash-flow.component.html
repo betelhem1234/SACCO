@@ -1,0 +1,402 @@
+<div class="fin-page">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#f59e0b,#b45309)">
+      <span class="material-icons text-white" style="font-size:20px">swap_horiz</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Cash Flow</h1>
+      <p class="text-xs" style="color:#64748b">{{ periodLabel(presetId) }} · Cash movement &amp; statement</p>
+    </div>
+    <mat-form-field appearance="outline" class="min-w-[190px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#f59e0b,#b45309)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ periodLabel(presetId) }}</span>
+  </p>
+
+  <mat-tab-group animationDuration="500ms" class="fin-tabs">
+    <!-- Tab 1: existing cash in/out -->
+    <mat-tab label="Cash Inflow / Outflow">
+      <div class="pt-5" *ngIf="report$ | async as report; else loadingOrEmpty">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div class="xl:col-span-2 space-y-5">
+            <!-- Inflows -->
+            <div class="fin-card overflow-hidden">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#ecfdf5;border-bottom:1px solid #a7f3d0">
+                <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#047857">Cash inflows</h2>
+                <span class="fin-section-badge" style="background:#d1fae5;color:#047857">{{ report.inflows.length }} transaction(s)</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Account</th>
+                      <th class="fin-text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of report.inflows">
+                      <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(row.date) }}</td>
+                      <td class="max-w-[280px] truncate">
+                        <span style="color:#1e293b">{{ row.description || '—' }}</span>
+                        <span *ngIf="row.reference" class="block font-mono text-[11px]" style="color:#64748b">{{ row.reference }}</span>
+                      </td>
+                      <td class="text-xs" style="color:#64748b">
+                        <a *ngIf="row.accountId; else cfNoLink"
+                           [routerLink]="['/finance/account-ledger', row.accountId]"
+                           [queryParams]="ledgerParams()"
+                           class="no-underline hover:underline"
+                           style="color:#1e40af;cursor:pointer">{{ row.accountName || '—' }}</a>
+                        <ng-template #cfNoLink>
+                          <span>{{ row.accountName || '—' }}</span>
+                        </ng-template>
+                      </td>
+                      <td class="fin-numeric font-semibold" style="color:#047857">+{{ etb(row.amount) }}</td>
+                    </tr>
+                    <tr *ngIf="report.inflows.length === 0">
+                      <td colspan="4" class="text-center py-6" style="color:#94a3b8">No cash inflows in this period.</td>
+                    </tr>
+                    <tr class="fin-total-row">
+                      <td colspan="3">Total inflows</td>
+                      <td class="fin-numeric">{{ etb(report.totalInflows) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Outflows -->
+            <div class="fin-card overflow-hidden">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#fef2f2;border-bottom:1px solid #fecaca">
+                <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#b91c1c">Cash outflows</h2>
+                <span class="fin-section-badge" style="background:#fee2e2;color:#b91c1c">{{ report.outflows.length }} transaction(s)</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Description</th>
+                      <th>Account</th>
+                      <th class="fin-text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of report.outflows">
+                      <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(row.date) }}</td>
+                      <td class="max-w-[280px] truncate">
+                        <span style="color:#1e293b">{{ row.description || '—' }}</span>
+                        <span *ngIf="row.reference" class="block font-mono text-[11px]" style="color:#64748b">{{ row.reference }}</span>
+                      </td>
+                      <td class="text-xs" style="color:#64748b">
+                        <a *ngIf="row.accountId; else cfOutNoLink"
+                           [routerLink]="['/finance/account-ledger', row.accountId]"
+                           [queryParams]="ledgerParams()"
+                           class="no-underline hover:underline"
+                           style="color:#1e40af;cursor:pointer">{{ row.accountName || '—' }}</a>
+                        <ng-template #cfOutNoLink>
+                          <span>{{ row.accountName || '—' }}</span>
+                        </ng-template>
+                      </td>
+                      <td class="fin-numeric font-semibold" style="color:#b91c1c">−{{ etb(row.amount) }}</td>
+                    </tr>
+                    <tr *ngIf="report.outflows.length === 0">
+                      <td colspan="4" class="text-center py-6" style="color:#94a3b8">No cash outflows in this period.</td>
+                    </tr>
+                    <tr class="fin-total-row">
+                      <td colspan="3">Total outflows</td>
+                      <td class="fin-numeric">{{ etb(report.totalOutflows) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Net cash flow summary -->
+          <div class="space-y-5">
+            <div class="fin-card p-6" style="background:linear-gradient(160deg,#f59e0b 0%,#b45309 100%)">
+              <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:#fef3c7">Net cash flow</p>
+              <p class="text-3xl font-extrabold text-white">{{ etb(report.netCashFlow) }}</p>
+              <p class="text-xs mt-1" style="color:#fde68a">Inflows minus outflows for this period</p>
+            </div>
+
+            <div class="fin-card p-6">
+              <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Movement</h3>
+              <dl class="space-y-2.5 text-sm">
+                <div class="flex justify-between">
+                  <dt style="color:#64748b">Cash in</dt>
+                  <dd class="font-semibold" style="color:#047857">{{ etb(report.totalInflows) }}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt style="color:#64748b">Cash out</dt>
+                  <dd class="font-semibold" style="color:#b91c1c">({{ etb(report.totalOutflows) }})</dd>
+                </div>
+                <div class="h-px my-3" style="background:#e2e8f0"></div>
+                <div class="flex justify-between items-center">
+                  <dt style="color:#64748b">Net cash flow</dt>
+                  <dd class="font-extrabold text-base" [style.color]="report.netCashFlow >= 0 ? '#065f46' : '#b91c1c'">
+                    {{ etb(report.netCashFlow) }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div
+              class="fin-card p-6 flex items-center gap-3"
+              [style.background]="report.netCashFlow >= 0 ? '#ecfdf5' : '#fef2f2'">
+              <span class="material-icons" [style.color]="report.netCashFlow >= 0 ? '#10b981' : '#ef4444'" style="font-size:28px">
+                {{ report.netCashFlow >= 0 ? 'trending_up' : 'trending_down' }}
+              </span>
+              <div>
+                <p class="font-semibold text-sm" [style.color]="report.netCashFlow >= 0 ? '#065f46' : '#991b1b'">
+                  {{ report.netCashFlow >= 0 ? 'Positive cash position' : 'Net cash outflow' }}
+                </p>
+                <p class="text-xs" style="color:#64748b">
+                  {{ report.netCashFlow >= 0 ? 'More cash came in than went out.' : 'More cash went out than came in.' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: ethiotrit-style Cash Flow Statement -->
+    <mat-tab label="Cash Flow Report">
+      <div class="pt-5" *ngIf="statement$ | async as stmt; else stmtLoading">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div class="xl:col-span-2 space-y-5">
+            <!-- Operating activities -->
+            <div class="fin-card overflow-hidden">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#eff6ff;border-bottom:1px solid #bfdbfe">
+                <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#1d4ed8">Operating activities</h2>
+                <span class="fin-section-badge" style="background:#dbeafe;color:#1d4ed8">{{ stmt.operating.length }} account(s)</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th class="fin-text-right">Debit</th>
+                      <th class="fin-text-right">Credit</th>
+                      <th class="fin-text-right">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of stmt.operating">
+                      <td class="text-xs" style="color:#475569">
+                        <a [routerLink]="['/finance/account-ledger', row.accountId]"
+                           [queryParams]="ledgerParams()"
+                           class="no-underline hover:underline"
+                           style="color:#1e40af;cursor:pointer">
+                          <span class="font-semibold" style="color:#1e293b">{{ row.accountName || '—' }}</span>
+                          <span *ngIf="row.accountNumber" class="block font-mono text-[11px]" style="color:#94a3b8">{{ row.accountNumber }}</span>
+                        </a>
+                      </td>
+                      <td class="fin-numeric">{{ etb(row.debit) }}</td>
+                      <td class="fin-numeric">{{ etb(row.credit) }}</td>
+                      <td class="fin-numeric font-semibold">{{ etb(row.balance) }}</td>
+                    </tr>
+                    <tr *ngIf="stmt.operating.length === 0">
+                      <td colspan="4" class="text-center py-6" style="color:#94a3b8">No operating activity in this period.</td>
+                    </tr>
+                    <tr class="fin-total-row">
+                      <td colspan="3">Net cash from operating activities</td>
+                      <td class="fin-numeric font-bold">{{ etb(stmt.operatingNet) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Investing activities -->
+            <div class="fin-card overflow-hidden">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#f5f3ff;border-bottom:1px solid #ddd6fe">
+                <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#6d28d9">Investing activities</h2>
+                <span class="fin-section-badge" style="background:#ede9fe;color:#6d28d9">{{ stmt.investing.length }} account(s)</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th class="fin-text-right">Debit</th>
+                      <th class="fin-text-right">Credit</th>
+                      <th class="fin-text-right">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of stmt.investing">
+                      <td class="text-xs" style="color:#475569">
+                        <a [routerLink]="['/finance/account-ledger', row.accountId]"
+                           [queryParams]="ledgerParams()"
+                           class="no-underline hover:underline"
+                           style="color:#1e40af;cursor:pointer">
+                          <span class="font-semibold" style="color:#1e293b">{{ row.accountName || '—' }}</span>
+                          <span *ngIf="row.accountNumber" class="block font-mono text-[11px]" style="color:#94a3b8">{{ row.accountNumber }}</span>
+                        </a>
+                      </td>
+                      <td class="fin-numeric">{{ etb(row.debit) }}</td>
+                      <td class="fin-numeric">{{ etb(row.credit) }}</td>
+                      <td class="fin-numeric font-semibold">{{ etb(row.balance) }}</td>
+                    </tr>
+                    <tr *ngIf="stmt.investing.length === 0">
+                      <td colspan="4" class="text-center py-6" style="color:#94a3b8">No investing activity in this period.</td>
+                    </tr>
+                    <tr class="fin-total-row">
+                      <td colspan="3">Net cash from investing activities</td>
+                      <td class="fin-numeric font-bold">{{ etb(stmt.investingNet) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Financing activities -->
+            <div class="fin-card overflow-hidden">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#fefce8;border-bottom:1px solid #fde68a">
+                <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#a16207">Financing activities</h2>
+                <span class="fin-section-badge" style="background:#fef3c7;color:#a16207">{{ stmt.financing.length }} account(s)</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="fin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th class="fin-text-right">Debit</th>
+                      <th class="fin-text-right">Credit</th>
+                      <th class="fin-text-right">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of stmt.financing">
+                      <td class="text-xs" style="color:#475569">
+                        <a [routerLink]="['/finance/account-ledger', row.accountId]"
+                           [queryParams]="ledgerParams()"
+                           class="no-underline hover:underline"
+                           style="color:#1e40af;cursor:pointer">
+                          <span class="font-semibold" style="color:#1e293b">{{ row.accountName || '—' }}</span>
+                          <span *ngIf="row.accountNumber" class="block font-mono text-[11px]" style="color:#94a3b8">{{ row.accountNumber }}</span>
+                        </a>
+                      </td>
+                      <td class="fin-numeric">{{ etb(row.debit) }}</td>
+                      <td class="fin-numeric">{{ etb(row.credit) }}</td>
+                      <td class="fin-numeric font-semibold">{{ etb(row.balance) }}</td>
+                    </tr>
+                    <tr *ngIf="stmt.financing.length === 0">
+                      <td colspan="4" class="text-center py-6" style="color:#94a3b8">No financing activity in this period.</td>
+                    </tr>
+                    <tr class="fin-total-row">
+                      <td colspan="3">Net cash from financing activities</td>
+                      <td class="fin-numeric font-bold">{{ etb(stmt.financingNet) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Statement summary -->
+          <div class="space-y-5">
+            <div class="fin-card p-6" style="background:linear-gradient(160deg,#1e3a5f 0%,#0f172a 100%)">
+              <p class="text-xs font-semibold uppercase tracking-widest mb-1" style="color:#93c5fd">Net increase / decrease in cash</p>
+              <p class="text-3xl font-extrabold text-white">{{ etb(stmt.netCashFlow) }}</p>
+              <p class="text-xs mt-1" style="color:#bfdbfe">Sum of operating, investing &amp; financing for this period</p>
+            </div>
+
+            <div class="fin-card p-6">
+              <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Activity summary</h3>
+              <dl class="space-y-2.5 text-sm">
+                <div class="flex justify-between">
+                  <dt style="color:#64748b">Operating</dt>
+                  <dd class="font-semibold" style="color:#1d4ed8">{{ etb(stmt.operatingNet) }}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt style="color:#64748b">Investing</dt>
+                  <dd class="font-semibold" style="color:#6d28d9">{{ etb(stmt.investingNet) }}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt style="color:#64748b">Financing</dt>
+                  <dd class="font-semibold" style="color:#a16207">{{ etb(stmt.financingNet) }}</dd>
+                </div>
+                <div class="h-px my-3" style="background:#e2e8f0"></div>
+                <div class="flex justify-between items-center">
+                  <dt style="color:#64748b">Net cash flow</dt>
+                  <dd class="font-extrabold text-base" [style.color]="stmt.netCashFlow >= 0 ? '#065f46' : '#b91c1c'">
+                    {{ etb(stmt.netCashFlow) }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div class="fin-card p-6" style="background:linear-gradient(160deg,#0e7490 0%,#155e75 100%)">
+              <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#cffafe">Total Year Cash Flow</h3>
+              <dl class="space-y-2.5 text-sm">
+                <div class="flex justify-between">
+                  <dt style="color:#a5f3fc">Cash &amp; equivalents at start</dt>
+                  <dd class="font-semibold text-white">{{ etb(stmt.startingAmount) }}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt style="color:#a5f3fc">Net increase / (decrease)</dt>
+                  <dd class="font-semibold text-white">{{ etb(stmt.netChange) }}</dd>
+                </div>
+                <div class="h-px my-3" style="background:#155e75"></div>
+                <div class="flex justify-between items-center">
+                  <dt style="color:#cffafe">Cash &amp; equivalents at end</dt>
+                  <dd class="font-extrabold text-base text-white">{{ etb(stmt.endingAmount) }}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div
+              class="fin-card p-6 flex items-center gap-3"
+              [style.background]="stmt.netCashFlow >= 0 ? '#ecfdf5' : '#fef2f2'">
+              <span class="material-icons" [style.color]="stmt.netCashFlow >= 0 ? '#10b981' : '#ef4444'" style="font-size:28px">
+                {{ stmt.netCashFlow >= 0 ? 'trending_up' : 'trending_down' }}
+              </span>
+              <div>
+                <p class="font-semibold text-sm" [style.color]="stmt.netCashFlow >= 0 ? '#065f46' : '#991b1b'">
+                  {{ stmt.netCashFlow >= 0 ? 'Increase in cash' : 'Decrease in cash' }}
+                </p>
+                <p class="text-xs" style="color:#64748b">
+                  {{ stmt.netCashFlow >= 0 ? 'Positive total cash movement across activities.' : 'Negative total cash movement across activities.' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="flex items-center justify-center py-24 flex-col gap-3">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p class="text-sm font-semibold" style="color:#64748b">Loading cash flow…</p>
+  </div>
+</ng-template>
+
+<ng-template #stmtLoading>
+  <div class="flex items-center justify-center py-24 flex-col gap-3">
+    <mat-spinner *ngIf="statementLoading$ | async" diameter="40"></mat-spinner>
+    <p class="text-sm font-semibold" style="color:#64748b">Loading cash flow statement…</p>
+  </div>
+</ng-template>

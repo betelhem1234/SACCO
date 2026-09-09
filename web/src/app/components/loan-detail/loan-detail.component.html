@@ -1,0 +1,195 @@
+    <section class="p-6" style="background:#f0f4f8;min-height:100%" *ngIf="loan$ | async as loan">
+      <div class="max-w-full mx-auto">
+        <!-- Page Header -->
+        <div class="flex items-center gap-4 mb-6">
+          <button mat-icon-button (click)="goBack()" style="background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+            <mat-icon>arrow_back</mat-icon>
+          </button>
+          <div>
+            <h1 class="text-xl font-bold m-0" style="color:#1e293b">Loan Detail</h1>
+            <p class="text-xs m-0" style="color:#64748b">ID: {{ loan.id }}</p>
+          </div>
+          <div class="ml-auto flex gap-3">
+             <mat-chip [color]="loan.status === 'APPROVED' ? 'accent' : (loan.status === 'ACTIVE' ? 'primary' : 'default')" selected>
+                <span class="font-bold text-sm">{{ loan.status }}</span>
+             </mat-chip>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Loan Info Card -->
+          <mat-card class="col-span-1 rounded-2xl shadow-sm border" style="border-color:#e2e8f0;box-shadow:none">
+            <mat-card-header class="border-b px-5 py-4" style="border-color:#f1f5f9">
+              <mat-card-title class="text-base font-bold flex items-center gap-2">
+                <mat-icon style="color:#3b82f6;font-size:20px;width:20px;height:20px">info</mat-icon>
+                Summary
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="p-5 flex flex-col gap-4">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#94a3b8">Member</p>
+                <p class="text-sm font-medium" style="color:#1e293b">{{ (memberName$ | async) }}</p>
+              </div>
+              <div class="flex justify-between items-center border-b pb-3" style="border-color:#f1f5f9">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#94a3b8">Approved Amount</p>
+                  <p class="text-lg font-mono font-bold text-blue-600">{{ loan.approvedAmount | number }}</p>
+                </div>
+                <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold border border-blue-100">
+                  {{ loan.interestRate }}% Interest
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#94a3b8">Term</p>
+                  <p class="text-sm font-medium" style="color:#1e293b">{{ loan.termMonths }} Months</p>
+                </div>
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#94a3b8">Date Approved</p>
+                  <p class="text-sm font-medium" style="color:#1e293b">{{ loan.createdAt | date:'mediumDate' }}</p>
+                </div>
+              </div>
+              <div *ngIf="loan.isDisbursed">
+                  <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#94a3b8">Date Disbursed</p>
+                  <p class="text-sm font-medium" style="color:#1e293b">{{ loan.disbursementDate | date:'mediumDate' }}</p>
+              </div>
+              <div *ngIf="totalDue$ | async as totalDue" class="mt-4 bg-red-50 p-3 rounded-xl border border-red-100">
+                  <p class="text-xs font-bold text-red-600 uppercase mb-1 flex items-center"><mat-icon class="mr-1" style="font-size:16px;height:16px;width:16px">warning</mat-icon> Total Due Needed</p>
+                  <p class="text-xl font-mono font-bold text-red-700">{{ totalDue | number }}</p>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Actions Card (Disburse or Repay) -->
+          <div class="col-span-1 lg:col-span-2 flex flex-col gap-6">
+            
+            <!-- Disburse Action Form -->
+            <mat-card *ngIf="loan.status === 'APPROVED' && !loan.isDisbursed" class="rounded-2xl shadow-sm border" style="border-color:#e2e8f0;box-shadow:none;background:linear-gradient(to right, #ffffff, #f8fafc)">
+              <mat-card-header class="border-b px-5 py-4" style="border-color:#f1f5f9">
+                <mat-card-title class="text-base font-bold flex items-center gap-2 text-green-700">
+                  <mat-icon style="font-size:20px;width:20px;height:20px">payments</mat-icon>
+                  Disburse Loan Funds
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="p-5">
+                <form [formGroup]="disburseForm" class="flex items-center gap-4">
+                   <mat-form-field appearance="outline" class="flex-1 w-full m-0">
+                     <mat-label>Paying Cash/Bank Account</mat-label>
+                     <mat-select formControlName="cashAccountId">
+                       <mat-option *ngFor="let acc of accounts$ | async" [value]="acc.id">{{ acc.name }}</mat-option>
+                     </mat-select>
+                   </mat-form-field>
+                   <mat-form-field appearance="outline" class="flex-1 w-full m-0">
+                     <mat-label>Reference/Cheque No</mat-label>
+                     <input matInput formControlName="referenceNo" />
+                   </mat-form-field>
+                   <button mat-flat-button color="primary" class="!py-6 px-6 font-bold" [disabled]="disburseForm.invalid" (click)="onDisburse(loan.id!)">
+                     DISBURSE
+                   </button>
+                </form>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Repay Action Form -->
+            <mat-card *ngIf="loan.status === 'ACTIVE'" class="rounded-2xl shadow-sm border" style="border-color:#e2e8f0;box-shadow:none;background:linear-gradient(to right, #ffffff, #f0fdf4)">
+              <mat-card-header class="border-b px-5 py-4" style="border-color:#f1f5f9">
+                <mat-card-title class="text-base font-bold flex items-center gap-2 text-green-700">
+                  <mat-icon style="font-size:20px;width:20px;height:20px">savings</mat-icon>
+                  Make a Repayment
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="p-5">
+                <form [formGroup]="repayForm" class="flex items-center gap-4">
+                   <mat-form-field appearance="outline" class="w-1/3 m-0">
+                     <mat-label>Amount Received</mat-label>
+                     <input matInput formControlName="amount" type="number" />
+                     <mat-icon matPrefix>attach_money</mat-icon>
+                   </mat-form-field>
+
+                   <mat-form-field appearance="outline" class="w-1/3 m-0">
+                     <mat-label>Receiving Bag/Bank Account</mat-label>
+                     <mat-select formControlName="cashAccountId">
+                       <mat-option *ngFor="let acc of accounts$ | async" [value]="acc.id">{{ acc.name }}</mat-option>
+                     </mat-select>
+                   </mat-form-field>
+
+                   <mat-form-field appearance="outline" class="w-1/3 m-0">
+                     <mat-label>Receipt Ref No</mat-label>
+                     <input matInput formControlName="referenceNo" />
+                   </mat-form-field>
+                </form>
+              </mat-card-content>
+              <mat-card-actions align="end" class="px-5 py-3 border-t bg-white" style="border-color:#e2e8f0">
+                 <button mat-flat-button color="primary" class="font-bold" [disabled]="repayForm.invalid" (click)="onRepay(loan.id!)">
+                     PROCESS REPAYMENT
+                 </button>
+              </mat-card-actions>
+            </mat-card>
+
+            <!-- Repayment Schedule Table -->
+            <mat-card class="rounded-2xl shadow-sm border overflow-x-auto md:overflow-x-visible" style="border-color:#e2e8f0;box-shadow:none">
+              <mat-card-header class="border-b px-5 py-4 bg-slate-50" style="border-color:#f1f5f9">
+                <mat-card-title class="text-base font-bold flex items-center gap-2">
+                  <mat-icon style="color:#64748b;font-size:20px;width:20px;height:20px">calendar_month</mat-icon>
+                  Repayment Schedule
+                </mat-card-title>
+              </mat-card-header>
+              <table mat-table [dataSource]="scheduleDataSource" class="w-full">
+
+                <ng-container matColumnDef="no">
+                  <th mat-header-cell *matHeaderCellDef class="pl-5">No.</th>
+                  <td mat-cell *matCellDef="let s" class="pl-5 font-bold">{{ s.installmentNo }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="dueDate">
+                  <th mat-header-cell *matHeaderCellDef>Due Date</th>
+                  <td mat-cell *matCellDef="let s" class="font-mono text-sm">{{ s.dueDate | date:'mediumDate' }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="principal">
+                  <th mat-header-cell *matHeaderCellDef>Principal</th>
+                  <td mat-cell *matCellDef="let s" class="text-sm font-mono">{{ s.principalAmount | number }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="interest">
+                  <th mat-header-cell *matHeaderCellDef>Interest</th>
+                  <td mat-cell *matCellDef="let s" class="text-sm font-mono">{{ s.interestAmount | number }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="total">
+                  <th mat-header-cell *matHeaderCellDef>Total Required</th>
+                  <td mat-cell *matCellDef="let s" class="text-sm font-mono font-bold">{{ s.totalAmount | number }}</td>
+                </ng-container>
+
+                 <ng-container matColumnDef="paid">
+                  <th mat-header-cell *matHeaderCellDef>Paid</th>
+                  <td mat-cell *matCellDef="let s" class="text-sm font-mono font-bold text-green-600">{{ s.paidAmount | number }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let s">
+                    <span class="px-2 py-1 rounded text-xs font-bold"
+                          [ngClass]="{
+                             'bg-gray-100 text-gray-600': s.status === 'PENDING',
+                             'bg-yellow-100 text-yellow-700': s.status === 'PARTIAL',
+                             'bg-green-100 text-green-700': s.status === 'PAID'
+                          }">
+                       {{ s.status }}
+                    </span>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="scheduleColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: scheduleColumns;" class="border-b hover:bg-slate-50 transition-colors"></tr>
+              </table>
+              <div *ngIf="scheduleDataSource.data.length === 0" class="p-6 text-center text-sm" style="color:#94a3b8">
+                 No schedule generated for this loan.
+              </div>
+            </mat-card>
+
+          </div>
+        </div>
+      </div>
+    </section>

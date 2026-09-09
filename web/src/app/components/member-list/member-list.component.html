@@ -1,0 +1,229 @@
+<div class="p-6" style="background:#f0f4f8;min-height:100%">
+  <div class="max-w-full mx-auto">
+    <!-- Toolbar -->
+    <div class="flex items-center gap-2 mb-4 flex-wrap" style="background:white;border-radius:12px;padding:8px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
+      <span class="text-lg font-bold mr-2" style="color:#1e293b">Members</span>
+
+      <button mat-button (click)="searchMembers()" matTooltip="Refresh">
+        <mat-icon style="color:#3b82f6">refresh</mat-icon>
+      </button>
+
+      <button mat-button (click)="onAdd()" matTooltip="Add Member" style="color:#059669">
+        <mat-icon>person_add</mat-icon>
+        <span class="ml-1">Add</span>
+      </button>
+
+      <button mat-button (click)="onAddCompany()" matTooltip="Add Company/Group" style="color:#8b5cf6">
+        <mat-icon>business</mat-icon>
+        <span class="ml-1">Company</span>
+      </button>
+
+      <button mat-button (click)="onAddChild()" matTooltip="Add Child" style="color:#f59e0b">
+        <mat-icon>child_care</mat-icon>
+        <span class="ml-1">Child</span>
+      </button>
+
+      <div class="flex-1"></div>
+
+      <button mat-icon-button [matMenuTriggerFor]="elementMenu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #elementMenu="matMenu">
+        <input #uploadExcelFile hidden type="file" accept=".xlsx,.xls" (change)="uploadExcel($event)" />
+        <button mat-menu-item (click)="uploadExcelFile.click()">
+          <mat-icon>upload</mat-icon>
+          <span>Import Members</span>
+        </button>
+        <input #uploadGroupExcelFile hidden type="file" accept=".xlsx,.xls" (change)="uploadGroupExcel($event)" />
+        <button mat-menu-item (click)="uploadGroupExcelFile.click()">
+          <mat-icon>upload</mat-icon>
+          <span>Import Group Members</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onBulkSms()">
+          <mat-icon>sms</mat-icon>
+          <span>Send Bulk SMS</span>
+        </button>
+        <button mat-menu-item (click)="onBulkEmail()">
+          <mat-icon>email</mat-icon>
+          <span>Send Bulk Email</span>
+        </button>
+      </mat-menu>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex items-center gap-3 mb-4 flex-wrap">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Search</mat-label>
+        <input matInput [formControl]="searchTextCtrl" placeholder="Search by name, phone..." />
+        <button *ngIf="searchTextCtrl.value" matSuffix mat-icon-button (click)="searchTextCtrl.setValue('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>ID Number</mat-label>
+        <input matInput [formControl]="memberIdCtrl" placeholder="Member ID" />
+        <button *ngIf="memberIdCtrl.value" matSuffix mat-icon-button (click)="memberIdCtrl.setValue('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field-sm">
+        <mat-label>Member Type</mat-label>
+        <mat-select [(value)]="memberTypeFilter" (valueChange)="searchMembers()">
+          <mat-option *ngFor="let t of memberTypes" [value]="t.id">{{ t.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field-sm">
+        <mat-label>Gender</mat-label>
+        <mat-select [(value)]="genderFilter" (valueChange)="searchMembers()">
+          <mat-option *ngFor="let g of genderTypes" [value]="g.id">{{ g.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field-sm">
+        <mat-label>Status</mat-label>
+        <mat-select [(value)]="statusFilter" (valueChange)="searchMembers()">
+          <mat-option *ngFor="let s of statusTypes" [value]="s.id">{{ s.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+    </div>
+
+    <!-- Loading -->
+    <div class="flex justify-center py-8" *ngIf="membersIsLoading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border" style="border-color:#e2e8f0"
+         [class.hidden]="membersIsLoading">
+      <table mat-table [dataSource]="dataSource" matSort (matSortChange)="onSortChange()" class="w-full">
+
+        <ng-container matColumnDef="memberid">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="pl-4">ID</th>
+          <td mat-cell *matCellDef="let element" class="pl-4">
+            <span class="text-sm font-mono font-semibold" style="color:#1e3a5f">{{ element.idNumbe || element.memberid }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="fullName">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+          <td mat-cell *matCellDef="let element">
+            <a [routerLink]="['/members', element.id]" class="flex items-center gap-2 no-underline cursor-pointer">
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                   style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
+                {{ (element.fullName || '?').charAt(0).toUpperCase() }}
+              </div>
+              <div>
+                <span class="text-sm font-medium block" style="color:#2563eb;text-decoration:none">{{ fullName(element) }}</span>
+                <span class="text-xs" style="color:#94a3b8">{{ element.email }}</span>
+              </div>
+            </a>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="is_male">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Gender</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="text-sm" style="color:#475569">
+              {{ element.isMale != null ? (element.isMale ? 'Male' : 'Female') : (element.is_male ? 'Male' : 'Female') }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="telephone">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Phone</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="text-sm font-mono" style="color:#475569">{{ element.telephone || element.phone }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="membership_date">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Member Since</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="text-sm" style="color:#475569">
+              {{ (element.membership_date || element.registrationDate) | date:'shortDate' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="member_branch_id">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Branch</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="text-sm" style="color:#475569">{{ getBranchName(element.branchId || element.branch_id) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="member_type">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  [style.background]="(element.memberType ?? element.member_type) === 2 ? '#fef3c7' : (element.memberType ?? element.member_type) === 0 ? '#dbeafe' : '#dcfce7'"
+                  [style.color]="(element.memberType ?? element.member_type) === 2 ? '#92400e' : (element.memberType ?? element.member_type) === 0 ? '#1e40af' : '#166534'">
+              {{ (element.memberType ?? element.member_type) === 2 ? 'Group' : (element.memberType ?? element.member_type) === 0 ? 'Child' : 'Normal' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef class="w-20"></th>
+          <td mat-cell *matCellDef="let element" class="w-20">
+            <button mat-icon-button [matMenuTriggerFor]="rowMenu" (click)="$event.stopPropagation()">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #rowMenu="matMenu">
+              <button mat-menu-item (click)="onEdit(element)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+              <button mat-menu-item (click)="onDelete(element)">
+                <mat-icon>delete</mat-icon>
+                <span>Delete</span>
+              </button>
+              <mat-divider></mat-divider>
+              <button mat-menu-item (click)="onConfirmationEmail(element)">
+                <mat-icon>email</mat-icon>
+                <span>Confirmation Email</span>
+              </button>
+              <button mat-menu-item (click)="onReverse(element)">
+                <mat-icon>history</mat-icon>
+                <span>Reverse</span>
+              </button>
+              <button mat-menu-item *ngIf="isAdultChild(element)" (click)="onTransferToAdult(element)">
+                <mat-icon>swap_horiz</mat-icon>
+                <span>Transfer to Adult</span>
+              </button>
+              <mat-divider></mat-divider>
+              <button mat-menu-item (click)="onFreeze(element)" *ngIf="element.membersipStatus !== 3 && element.status !== 606">
+                <mat-icon>ac_unit</mat-icon>
+                <span>Freeze Account</span>
+              </button>
+              <button mat-menu-item (click)="onUnfreeze(element)" *ngIf="element.membersipStatus === 3 || element.status === 606">
+                <mat-icon>whatshot</mat-icon>
+                <span>Unfreeze Account</span>
+              </button>
+            </mat-menu>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="membersDisplayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: membersDisplayedColumns;" class="transition-all duration-150"></tr>
+      </table>
+
+      <mat-paginator #paginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                     [pageSize]="10" [length]="membersTotalCount"
+                     [style.display]="membersTotalCount > 0 ? '' : 'none'">
+      </mat-paginator>
+
+      <div *ngIf="membersData.length === 0 && !membersIsLoading"
+           class="flex flex-col items-center justify-center py-16 text-center">
+        <mat-icon style="font-size:48px;color:#cbd5e1;width:48px;height:48px">group</mat-icon>
+        <p class="font-medium mt-3" style="color:#64748b">No members registered yet</p>
+        <p class="text-sm mt-1" style="color:#94a3b8">Click "Add" to register a new member</p>
+      </div>
+    </div>
+  </div>
+</div>

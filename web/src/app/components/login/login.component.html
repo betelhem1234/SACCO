@@ -1,0 +1,50 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h1 class="auth-title">Welcome Back</h1>
+    <p class="auth-subtitle">Sign in to your financial dashboard</p>
+
+    <div *ngIf="error$ | async as error" class="error-message">
+      {{ error }}
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address</label>
+        <input 
+          type="email" 
+          id="email" 
+          class="form-control" 
+          formControlName="email" 
+          placeholder="name@company.com" 
+          autocomplete="email"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          class="form-control" 
+          formControlName="password" 
+          placeholder="••••••••" 
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn-primary" 
+        [disabled]="loginForm.invalid || (loading$ | async)">
+        <span *ngIf="loading$ | async">Authenticating...</span>
+        <span *ngIf="!(loading$ | async)">Sign In</span>
+      </button>
+
+      <div class="links">
+        <a routerLink="/forgot-password">Forgot password?</a>
+      </div>
+    </form>
+  </div>
+</div>

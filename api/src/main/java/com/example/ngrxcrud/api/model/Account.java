@@ -46,4 +46,7 @@ public class Account {
     @Convert(converter = AccountCategoryConverter.class)
     @Column(name = "account_category", nullable = false)
     private AccountCategory accountCategory;
+
+    @Column(name = "classification_id")
+    private UUID classificationId;
 }

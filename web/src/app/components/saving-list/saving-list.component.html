@@ -1,0 +1,152 @@
+    <section class="p-6" style="background:#f0f4f8;min-height:100%">
+      <div class="max-w-full mx-auto">
+
+        <!-- Page Header -->
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                 style="background:linear-gradient(135deg,#10b981,#059669)">
+              <span class="material-icons text-white" style="font-size:20px">savings</span>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold" style="color:#1e293b">Savings Management</h1>
+              <p class="text-xs" style="color:#64748b">Record and manage member savings</p>
+            </div>
+          </div>
+          <button (click)="onAdd()"
+                  class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer transition-all duration-200"
+                  style="background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 12px rgba(16,185,129,0.35)">
+            <span class="material-icons" style="font-size:18px">add</span>
+            Record Saving
+          </button>
+        </div>
+
+        <!-- Table Card -->
+        <div class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border" style="border-color:#e2e8f0">
+          <table mat-table [dataSource]="dataSource" class="w-full">
+
+            <ng-container matColumnDef="memberId">
+              <th mat-header-cell *matHeaderCellDef class="pl-6">Member ID</th>
+              <td mat-cell *matCellDef="let saving" class="pl-6">
+                <span class="text-sm font-mono font-semibold" style="color:#1e3a5f">{{ saving.memberNumber }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="memberName">
+              <th mat-header-cell *matHeaderCellDef>Member Name</th>
+              <td mat-cell *matCellDef="let saving">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                       style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+                    {{ (saving.memberName || '?').charAt(0).toUpperCase() }}
+                  </div>
+                  <span class="text-sm font-medium" style="color:#1e293b">{{ saving.memberName }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="savingType">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let saving">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      [ngStyle]="getTypeBadgeStyle(saving.savingType)">
+                  {{ saving.savingTypeName }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="accountName">
+              <th mat-header-cell *matHeaderCellDef>Account</th>
+              <td mat-cell *matCellDef="let saving">
+                <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
+                  {{ saving.accountDisplayName }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef>Amount</th>
+              <td mat-cell *matCellDef="let saving">
+                <span class="text-sm font-bold" style="color:#059669">
+                  {{ saving.savingAmount | currency:'ETB':'symbol':'1.2-2' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="ftp">
+              <th mat-header-cell *matHeaderCellDef>FTP Ref</th>
+              <td mat-cell *matCellDef="let saving">
+                <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#f1f5f9;color:#475569">
+                  {{ saving.ftp }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let saving">
+                <span class="text-sm" style="color:#64748b">{{ saving.savingDate | date }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let saving">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      [ngStyle]="getStatusBadgeStyle(saving.status)">
+                  {{ saving.status || 'POSTED' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let saving">
+                <div class="flex items-center gap-1">
+                  <button mat-icon-button matTooltip="View" (click)="onView(saving)"
+                          class="!w-8 !h-8" style="color:#059669">
+                    <span class="material-icons" style="font-size:18px">visibility</span>
+                  </button>
+                  <button *ngIf="saving.status === 'PENDING'" mat-icon-button matTooltip="Approve" (click)="onApprove(saving)"
+                          class="!w-8 !h-8" style="color:#047857">
+                    <span class="material-icons" style="font-size:18px">check_circle</span>
+                  </button>
+                  <button *ngIf="saving.status === 'PENDING'" mat-icon-button matTooltip="Reject" (click)="onReject(saving)"
+                          class="!w-8 !h-8" style="color:#b91c1c">
+                    <span class="material-icons" style="font-size:18px">cancel</span>
+                  </button>
+                  <button *ngIf="saving.status !== 'POSTED'" mat-icon-button matTooltip="Edit" (click)="onEdit(saving)"
+                          class="!w-8 !h-8" style="color:#1e3a5f">
+                    <span class="material-icons" style="font-size:18px">edit</span>
+                  </button>
+                  <button mat-icon-button matTooltip="Print CRV" (click)="onPrint(saving)"
+                          class="!w-8 !h-8" style="color:#1e3a5f">
+                    <span class="material-icons" style="font-size:18px">print</span>
+                  </button>
+                  <button *ngIf="saving.status !== 'POSTED'" mat-icon-button matTooltip="Delete" (click)="onDelete(saving.id)"
+                          class="!w-8 !h-8" style="color:#ef4444">
+                    <span class="material-icons" style="font-size:18px">delete_outline</span>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                class="transition-all duration-150 cursor-pointer"></tr>
+          </table>
+
+          <mat-paginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons
+                         [pageSize]="10" [length]="dataSource.data.length"
+                         [style.display]="dataSource.data.length > 0 ? '' : 'none'">
+          </mat-paginator>
+
+          <div *ngIf="dataSource.data.length === 0"
+               class="flex flex-col items-center justify-center py-16 text-center">
+            <span class="material-icons mb-3" style="font-size:48px;color:#cbd5e1">savings</span>
+            <p class="font-medium" style="color:#64748b">No savings recorded yet</p>
+            <p class="text-sm mt-1" style="color:#94a3b8">Click "Record Saving" to get started</p>
+          </div>
+        </div>
+      </div>
+    </section>

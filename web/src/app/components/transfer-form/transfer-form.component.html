@@ -1,0 +1,91 @@
+<div>
+  <div class="px-6 py-5 flex items-center gap-3"
+       style="background:linear-gradient(135deg,#0891b2,#065f73)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">swap_horiz</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Transfer' : 'Record New Transfer' }}</h2>
+      <p class="text-xs m-0" style="color:#a5f3fc">Transfer savings between members or saving types</p>
+    </div>
+  </div>
+
+  <mat-dialog-content class="px-6 py-5">
+    <form [formGroup]="form" class="flex flex-col gap-3">
+
+      <p class="text-xs font-semibold uppercase tracking-wide mb-1" style="color:#0891b2">Source</p>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Source Member</mat-label>
+        <mat-select formControlName="sourceMemberId" required>
+          <mat-option *ngFor="let m of members$ | async" [value]="m.id">
+            {{ m.fullName }} ({{ m.idNumbe || m.memberid || 'No ID' }})
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Source Saving Type</mat-label>
+        <mat-select formControlName="sourceSavingTypeId" required>
+          <mat-option *ngFor="let st of savingTypes$ | async" [value]="st.id">
+            {{ st.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="border-t border-gray-100 my-1"></div>
+
+      <p class="text-xs font-semibold uppercase tracking-wide mb-1" style="color:#0891b2">Destination</p>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Destination Member</mat-label>
+        <mat-select formControlName="destinationMemberId" required>
+          <mat-option *ngFor="let m of members$ | async" [value]="m.id">
+            {{ m.fullName }} ({{ m.idNumbe || m.memberid || 'No ID' }})
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Destination Saving Type</mat-label>
+        <mat-select formControlName="destinationSavingTypeId" required>
+          <mat-option *ngFor="let st of savingTypes$ | async" [value]="st.id">
+            {{ st.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="border-t border-gray-100 my-1"></div>
+
+      <div class="flex gap-3">
+        <mat-form-field appearance="outline" class="w-1/2">
+          <mat-label>Amount (ETB)</mat-label>
+          <input matInput type="number" formControlName="amount" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-1/2">
+          <mat-label>FTP Reference</mat-label>
+          <input matInput formControlName="ftp" required />
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Date</mat-label>
+        <input matInput type="date" formControlName="date" required />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Remark</mat-label>
+        <input matInput formControlName="remark" />
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button [disabled]="!form.valid" (click)="submit()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:linear-gradient(135deg,#0891b2,#065f73);color:white;box-shadow:0 4px 12px rgba(8,145,178,0.35)">
+      {{ editMode ? 'Update Transfer' : 'Record Transfer' }}
+    </button>
+  </mat-dialog-actions>
+</div>

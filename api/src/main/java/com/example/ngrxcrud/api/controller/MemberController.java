@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/members")
@@ -20,19 +21,36 @@ public class MemberController {
         return memberRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public Member getMember(@PathVariable UUID id) {
+        return memberRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Member not found: " + id));
+    }
+
     @PostMapping
     public Member addMember(@RequestBody Member member) {
-        return memberRepository.save(member);
+        return saveWithRelations(member);
     }
 
     @PutMapping("/{id}")
-    public Member updateMember(@PathVariable java.util.UUID id, @RequestBody Member member) {
+    public Member updateMember(@PathVariable UUID id, @RequestBody Member member) {
         member.setId(id);
-        return memberRepository.save(member);
+        return saveWithRelations(member);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteMember(@PathVariable java.util.UUID id) {
+    public void deleteMember(@PathVariable UUID id) {
         memberRepository.deleteById(id);
+    }
+
+    private Member saveWithRelations(Member member) {
+        if (member.getBeneficiaries() != null) {
+            member.getBeneficiaries().forEach(b -> b.setMember(member));
+        }
+            
+        if (member.getReferrals() != null) {
+            member.getReferrals().forEach(r -> r.setMember(member));
+        }
+        return memberRepository.save(member);
     }
 }

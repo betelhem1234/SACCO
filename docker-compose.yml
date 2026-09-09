@@ -1,11 +1,14 @@
 services:
   db:
+    container_name: sacco-db
     image: postgres:15-alpine
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_DB: ngrx
       POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
+    volumes:
+      - sacco-db-data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
@@ -15,6 +18,7 @@ services:
       retries: 5
 
   api:
+    container_name: sacco-api
     build:
       context: ./api
       dockerfile: Dockerfile
@@ -29,18 +33,24 @@ services:
       SPRING_DATASOURCE_PASSWORD: password
     networks:
       - app-network
+      - dev-gateway
 
   web:
+    container_name: sacco-web
     build:
       context: .
       dockerfile: web/Dockerfile
-    ports:
-      - "80:80"
     depends_on:
       - api
     networks:
       - app-network
+      - dev-gateway
+
+volumes:
+  sacco-db-data:
 
 networks:
   app-network:
     driver: bridge
+  dev-gateway:
+    external: true

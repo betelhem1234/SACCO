@@ -1,0 +1,441 @@
+<div>
+  <!-- Dialog Header -->
+  <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">{{ editMode ? 'edit' : 'person_add' }}</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Member' : 'Register New Member' }}</h2>
+      <p class="text-xs m-0" style="color:#93c5fd">{{ editMode ? 'Update member information' : 'Complete the steps to register the member' }}</p>
+    </div>
+  </div>
+
+  <mat-dialog-content class="px-6 py-5">
+    <div class="tc-loading flex justify-center py-8" *ngIf="isLoading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <div *ngIf="!isLoading">
+      <form [formGroup]="memberForm">
+        <mat-stepper #stepper linear labelPosition="bottom" (selectionChange)="onStepChange($event)" class="member-stepper">
+
+          <!-- Step 1: Personal Information -->
+          <mat-step [completed]="step1Complete()" [stepControl]="memberForm">
+            <ng-template matStepLabel>Personal</ng-template>
+            <p class="step-title">Personal Information</p>
+
+            <div class="flex gap-4 items-center flex-wrap">
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>ID Number</mat-label>
+                <input matInput formControlName="memberid" />
+              </mat-form-field>
+
+              <mat-radio-group formControlName="member_type" class="flex gap-3 flex-wrap">
+                <mat-radio-button *ngFor="let t of memberTypes" [value]="t.id">{{ t.name }}</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+            <!-- Adult / Child personal fields -->
+            <ng-container *ngIf="memberForm.get('member_type')?.value !== 2">
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Full Name *</mat-label>
+                  <input matInput formControlName="fullName" required />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Mother Name *</mat-label>
+                  <input matInput formControlName="mother_name" required />
+                </mat-form-field>
+              </div>
+
+              <div class="flex gap-4 items-center flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Birth Date</mat-label>
+                  <input matInput [matDatepicker]="birthPicker" formControlName="birth_date" (dateChange)="calculateAge()" />
+                  <mat-datepicker-toggle matSuffix [for]="birthPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #birthPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Age</mat-label>
+                  <input matInput type="number" formControlName="age" />
+                </mat-form-field>
+
+                <div class="flex-1">
+                  <label class="block text-sm font-medium mb-1" style="color:#475569">Gender *</label>
+                  <mat-radio-group formControlName="is_male">
+                    <mat-radio-button [value]="true" class="mr-4">Male</mat-radio-button>
+                    <mat-radio-button [value]="false">Female</mat-radio-button>
+                  </mat-radio-group>
+                </div>
+              </div>
+
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Family Size</mat-label>
+                  <input matInput type="number" formControlName="family_size" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1" *ngIf="memberForm.get('member_type')?.value !== 0">
+                  <mat-label>Job Field</mat-label>
+                  <mat-select formControlName="job_field">
+                    <mat-option value="">Select</mat-option>
+                    <mat-option value="Employed">Employed</mat-option>
+                    <mat-option value="Self-Employed">Self-Employed</mat-option>
+                    <mat-option value="Unemployed">Unemployed</mat-option>
+                    <mat-option value="Student">Student</mat-option>
+                    <mat-option value="Retired">Retired</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1" *ngIf="memberForm.get('member_type')?.value === 1">
+                  <mat-label>Marital Status</mat-label>
+                  <mat-select formControlName="marital_status">
+                    <mat-option [value]="0">Single</mat-option>
+                    <mat-option [value]="1">Married</mat-option>
+                    <mat-option [value]="2">Divorced</mat-option>
+                    <mat-option [value]="3">Widowed</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1" *ngIf="memberForm.get('member_type')?.value !== 0">
+                  <mat-label>Work Address</mat-label>
+                  <input matInput formControlName="work_address" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1" *ngIf="memberForm.get('member_type')?.value !== 0">
+                  <mat-label>Fayda ID No</mat-label>
+                  <input matInput formControlName="fayda_id_no" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Education</mat-label>
+                  <mat-select formControlName="education_id">
+                    <mat-option value="">Select</mat-option>
+                    <mat-option *ngFor="let e of educations" [value]="e.id">{{ e.name }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </ng-container>
+
+            <!-- Company name -->
+            <ng-container *ngIf="memberForm.get('member_type')?.value === 2">
+              <mat-form-field appearance="outline" class="w-full">
+                <mat-label>Company/Group Name *</mat-label>
+                <input matInput formControlName="fullName" required />
+              </mat-form-field>
+            </ng-container>
+
+            <!-- Parent / Guardian (Child) -->
+            <ng-container *ngIf="memberForm.get('member_type')?.value === 0">
+              <mat-divider></mat-divider>
+              <p class="font-semibold text-sm mt-3 mb-2" style="color:#475569">Parent / Guardian</p>
+
+              <div class="flex items-center gap-3 mb-3">
+                <span class="text-sm">Is parent/guardian a member?</span>
+                <mat-slide-toggle formControlName="is_member"></mat-slide-toggle>
+              </div>
+
+              <ng-container *ngIf="memberForm.get('is_member')?.value">
+                <div class="flex gap-4 items-center flex-wrap">
+                  <button mat-raised-button color="primary" (click)="pickParent()">
+                    <mat-icon>person_search</mat-icon> Choose Member
+                  </button>
+                  <span *ngIf="showName" class="text-sm font-medium" style="color:#1e3a5f">{{ memberName }}</span>
+                </div>
+              </ng-container>
+
+              <ng-container *ngIf="!memberForm.get('is_member')?.value">
+                <div class="flex gap-4 flex-wrap">
+                  <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Parent/Guardian Full Name</mat-label>
+                    <input matInput formControlName="immediate_contact_full_name" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Parent/Guardian Job</mat-label>
+                    <input matInput formControlName="job_field" />
+                  </mat-form-field>
+                </div>
+                <div class="flex gap-4 flex-wrap">
+                  <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Parent/Guardian Telephone</mat-label>
+                    <input matInput formControlName="telephone" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" class="flex-1">
+                    <mat-label>Parent/Guardian Email</mat-label>
+                    <input matInput type="email" formControlName="email" />
+                  </mat-form-field>
+                </div>
+              </ng-container>
+            </ng-container>
+
+            <!-- Group Members (Company) -->
+            <ng-container *ngIf="memberForm.get('member_type')?.value === 2">
+              <mat-divider></mat-divider>
+              <p class="font-semibold text-sm mt-3 mb-2" style="color:#475569">Group Members</p>
+
+              <div class="flex items-center gap-3">
+                <button mat-raised-button color="primary" (click)="addGroupMemberOpen()">
+                  <mat-icon>person_add</mat-icon> Add Member
+                </button>
+              </div>
+
+              <div *ngIf="groupMembers.length > 0" class="border rounded p-3 mt-2" style="border-color:#e2e8f0">
+                <div *ngFor="let gm of groupMembers; let i = index" class="flex items-center justify-between py-1 border-b last:border-0" style="border-color:#f1f5f9">
+                  <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium">{{ gm.first_name }} {{ gm.middle_name }} {{ gm.last_name }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded" [style.background]="gm.is_male ? '#dbeafe' : '#fce7f3'" [style.color]="gm.is_male ? '#1d4ed8' : '#db2777'">
+                      {{ gm.is_male ? 'Male' : 'Female' }}
+                    </span>
+                    <span class="text-xs" style="color:#64748b">{{ gm.telephone || '' }}</span>
+                  </div>
+                  <div class="flex items-center">
+                    <button mat-icon-button color="primary" (click)="editGroupMember(gm)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="removeGroupMember(i)">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p *ngIf="groupMembers.length === 0" class="text-sm mt-2" style="color:#64748b">
+                No group members added yet. Add at least one member to continue.
+              </p>
+            </ng-container>
+
+            <div class="step-actions">
+              <button mat-raised-button color="primary" matStepperNext>Next</button>
+            </div>
+          </mat-step>
+
+          <!-- Step 2: Contact & Address -->
+          <mat-step [completed]="step2Complete()" [stepControl]="memberForm">
+            <ng-template matStepLabel>Contact</ng-template>
+            <p class="step-title">Contact &amp; Address</p>
+
+            <!-- Contact & Address (not for Company) -->
+            <ng-container *ngIf="memberForm.get('member_type')?.value !== 2">
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Telephone</mat-label>
+                  <input matInput formControlName="telephone" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Home/Office Phone</mat-label>
+                  <input matInput formControlName="home_phone_number" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Email</mat-label>
+                  <input matInput type="email" formControlName="email" />
+                </mat-form-field>
+              </div>
+
+              <p class="font-semibold text-sm mt-2 mb-1" style="color:#475569">Address</p>
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Region</mat-label>
+                  <mat-select formControlName="state_id">
+                    <mat-option *ngFor="let r of regions" [value]="r.id">{{ r.name }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Subcity</mat-label>
+                  <mat-select formControlName="subcity">
+                    <mat-option *ngFor="let s of filteredSubcities()" [value]="s.id">{{ s.name }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Woreda</mat-label>
+                  <input matInput formControlName="woreda" />
+                </mat-form-field>
+              </div>
+
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>House No</mat-label>
+                  <input matInput formControlName="house_no" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Kebele</mat-label>
+                  <input matInput formControlName="kebele" />
+                </mat-form-field>
+              </div>
+            </ng-container>
+
+            <!-- Referral & Immediate Contact (not for Child) -->
+            <ng-container *ngIf="memberForm.get('member_type')?.value !== 0">
+              <mat-divider></mat-divider>
+
+              <p class="font-semibold text-sm mt-3 mb-2" style="color:#475569">Referral</p>
+              <div class="flex gap-3 flex-wrap">
+                <button mat-raised-button (click)="pickReferalMembers()">
+                  <mat-icon>person_search</mat-icon> Existing Member
+                </button>
+                <button mat-raised-button (click)="addReferalMemberOpen()">
+                  <mat-icon>person_add</mat-icon> New Referral
+                </button>
+              </div>
+              <div *ngIf="referalMembers.length > 0" class="border rounded p-3 mt-2" style="border-color:#e2e8f0">
+                <div *ngFor="let rm of referalMembers; let i = index" class="flex items-center justify-between py-1 border-b last:border-0" style="border-color:#f1f5f9">
+                  <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium">{{ rm.first_name }} {{ rm.middle_name }} {{ rm.last_name }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded" [style.background]="rm.is_male ? '#dbeafe' : '#fce7f3'" [style.color]="rm.is_male ? '#1d4ed8' : '#db2777'">
+                      {{ rm.is_male ? 'Male' : 'Female' }}
+                    </span>
+                    <span class="text-xs" style="color:#64748b">{{ rm.telephone || '' }}</span>
+                  </div>
+                  <div class="flex items-center">
+                    <button mat-icon-button color="primary" (click)="editReferalMember(rm)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="removeReferalMember(i)">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <p class="font-semibold text-sm mt-4 mb-1" style="color:#475569">Immediate Contact Information</p>
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Full Name</mat-label>
+                  <input matInput formControlName="immediate_contact_full_name" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Phone</mat-label>
+                  <input matInput formControlName="immediate_contact_phone" />
+                </mat-form-field>
+              </div>
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Region</mat-label>
+                  <mat-select formControlName="immediate_contact_region">
+                    <mat-option value="">Select</mat-option>
+                    <mat-option *ngFor="let r of regions" [value]="r.id">{{ r.name }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Subcity</mat-label>
+                  <mat-select formControlName="immediate_contact_subcity">
+                    <mat-option value="">Select</mat-option>
+                    <mat-option *ngFor="let s of filteredImmediateSubcities()" [value]="s.id">{{ s.name }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Email</mat-label>
+                  <input matInput formControlName="immediate_contact_email" />
+                </mat-form-field>
+              </div>
+              <div class="flex gap-4 flex-wrap">
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>House No</mat-label>
+                  <input matInput formControlName="immediate_contact_house_no" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="flex-1">
+                  <mat-label>Woreda</mat-label>
+                  <input matInput formControlName="immediate_contact_woreda" />
+                </mat-form-field>
+              </div>
+            </ng-container>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>Back</button>
+              <button mat-raised-button color="primary" matStepperNext>Next</button>
+            </div>
+          </mat-step>
+
+          <!-- Step 3: Membership & Beneficiaries -->
+          <mat-step [completed]="step3Complete()" [stepControl]="memberForm">
+            <ng-template matStepLabel>Membership</ng-template>
+            <p class="step-title">Membership &amp; Beneficiaries</p>
+
+            <div class="flex gap-4 flex-wrap">
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Branch *</mat-label>
+                <mat-select formControlName="branch_id" required>
+                  <mat-option *ngFor="let b of branches" [value]="b.id">{{ b.name }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <div class="flex-1 flex flex-col justify-center" *ngIf="memberForm.get('member_type')?.value === 1">
+                <label class="text-xs font-medium mb-1" style="color:#64748b">Is Staff</label>
+                <mat-radio-group [(ngModel)]="is_employee" [ngModelOptions]="{standalone: true}" class="flex gap-3">
+                  <mat-radio-button [value]="true">Yes</mat-radio-button>
+                  <mat-radio-button [value]="false">No</mat-radio-button>
+                </mat-radio-group>
+              </div>
+            </div>
+
+            <div class="flex gap-4 flex-wrap">
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Membership Date</mat-label>
+                <input matInput [matDatepicker]="memPicker" formControlName="membership_date" />
+                <mat-datepicker-toggle matSuffix [for]="memPicker"></mat-datepicker-toggle>
+                <mat-datepicker #memPicker></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Kebele ID</mat-label>
+                <input matInput formControlName="id_no" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Saving Product</mat-label>
+                <mat-select formControlName="reason">
+                  <mat-option [value]="0">Select Product</mat-option>
+                  <mat-option *ngFor="let p of products" [value]="p.id">{{ p.name }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <div class="flex items-center gap-3 flex-wrap mt-3">
+              <span class="font-semibold text-sm" style="color:#475569">Beneficiaries</span>
+              <span class="text-xs" style="color:#94a3b8">People who may inherit the member's savings.</span>
+              <button mat-raised-button color="primary" (click)="addBeneficiary()">
+                <mat-icon>person_add</mat-icon> Add Beneficiary
+              </button>
+            </div>
+            <div *ngIf="beneficiaries.length > 0" class="border rounded p-3 mt-2" style="border-color:#e2e8f0">
+              <div *ngFor="let b of beneficiaries; let i = index" class="flex items-center justify-between py-1 border-b last:border-0" style="border-color:#f1f5f9">
+                <div class="flex items-center gap-3">
+                  <span class="text-sm font-medium">{{ b.name }}</span>
+                  <span class="text-xs px-2 py-0.5 rounded" [style.background]="b.is_male ? '#dbeafe' : '#fce7f3'" [style.color]="b.is_male ? '#1d4ed8' : '#db2777'">
+                    {{ b.is_male ? 'Male' : 'Female' }}
+                  </span>
+                  <span class="text-xs px-2 py-0.5 rounded" style="background:#f0fdf4;color:#166534">
+                    {{ relationLabel(b.relation_type) }}
+                  </span>
+                  <span class="text-xs" style="color:#64748b">{{ b.telephone || '' }}</span>
+                </div>
+                <div class="flex items-center">
+                  <button mat-icon-button color="primary" (click)="editBeneficiary(b)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="removeBeneficiary(i)">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>Back</button>
+            </div>
+          </mat-step>
+
+        </mat-stepper>
+      </form>
+    </div>
+  </mat-dialog-content>
+
+  <!-- Actions -->
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button *ngIf="currentStepIndex === 2" [disabled]="!canSubmit() || isLoading" (click)="onSubmit()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white;box-shadow:0 4px 12px rgba(30,58,95,0.3)">
+      {{ editMode ? 'Save Changes' : 'Register Member' }}
+    </button>
+  </mat-dialog-actions>
+</div>

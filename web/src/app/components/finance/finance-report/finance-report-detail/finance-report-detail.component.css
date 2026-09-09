@@ -1,0 +1,36 @@
+.fin-detail-dialog {
+  min-width: 640px;
+  max-width: 90vw;
+}
+
+.fin-detail-title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #1e3a5f;
+}
+
+.fin-detail-content {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.fin-detail-table-wrap {
+  overflow-x: auto;
+}
+
+.fin-detail-empty {
+  text-align: center;
+  padding: 24px;
+  color: #64748b;
+}
+
+.fin-detail-total {
+  text-align: right;
+  margin-top: 14px;
+  font-weight: 600;
+  color: #1e3a5f;
+}
+
+.fin-detail-actions {
+  padding-bottom: 8px;
+}

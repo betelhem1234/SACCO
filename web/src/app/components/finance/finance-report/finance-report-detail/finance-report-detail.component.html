@@ -1,0 +1,44 @@
+<div class="fin-detail-dialog">
+  <h2 mat-dialog-title class="fin-detail-title">
+    {{ data.title }} Details
+  </h2>
+
+  <mat-dialog-content class="fin-detail-content">
+    <div *ngIf="data.rows.length > 0" class="fin-detail-table-wrap">
+      <table class="fin-table fin-detail-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Member Name</th>
+            <th>Member ID</th>
+            <th>Description</th>
+            <th>Reference</th>
+            <th class="fin-text-right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of data.rows">
+            <td>{{ fmtDate(r.date) }}</td>
+            <td>{{ r.memberName || '—' }}</td>
+            <td>{{ r.memberId || '—' }}</td>
+            <td>{{ r.description || '—' }}</td>
+            <td>{{ r.reference || '—' }}</td>
+            <td class="fin-text-right">{{ etb(r.amount) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="data.rows.length === 0" class="fin-detail-empty">
+      No transactions found in this period.
+    </div>
+
+    <div class="fin-detail-total">
+      Total: <strong>{{ etb(data.total) }}</strong>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="fin-detail-actions">
+    <button mat-flat-button color="primary" (click)="onClose()">Close</button>
+  </mat-dialog-actions>
+</div>

@@ -1,0 +1,170 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#334155,#1e293b)">
+      <span class="material-icons text-white" style="font-size:20px">menu_book</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">General Ledger</h1>
+      <p class="text-xs" style="color:#64748b">
+        {{ periodLabel(presetId) }} · {{ report.entries.length }} journal entries
+        · Ending Balance = <span class="font-semibold" style="color:#065f46">{{ etb(report.balance) }}</span>
+      </p>
+    </div>
+    <mat-form-field appearance="outline" class="min-w-[170px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#334155,#1e293b)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex items-center gap-3 mb-4 flex-wrap no-print">
+    <mat-form-field appearance="outline" class="min-w-[260px] flex-1" subscriptSizing="dynamic">
+      <mat-label>Account</mat-label>
+      <mat-select
+        [(ngModel)]="accountId"
+        (selectionChange)="onAccountChange()">
+        <mat-option [value]="''">All accounts</mat-option>
+        <ng-container *ngIf="accounts$ | async as accounts">
+          <mat-optgroup *ngFor="let t of accountGroups" [label]="t.label">
+            <mat-option *ngFor="let a of byType(accounts, t.typ)" [value]="a.id">
+              {{ a.accountNumber }} — {{ a.name }}
+            </mat-option>
+          </mat-optgroup>
+        </ng-container>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ periodLabel(presetId) }}</span>
+    <ng-container *ngIf="isFiltered()">
+      · Account:
+      <span class="font-semibold" style="color:#1e293b">{{ selectedAccountLabel(accounts$ | async) }}</span>
+      <button (click)="clearAccount()" class="ml-1 align-middle text-[10px] uppercase tracking-wide font-bold rounded px-1.5 py-0.5 no-print"
+              style="background:#fee2e2;color:#b91c1c">clear</button>
+    </ng-container>
+  </p>
+
+  <!-- Period total -->
+  <div class="fin-card overflow-hidden mb-5">
+    <div class="px-5 py-3" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+      <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#1e3a5f">Ledger totals</h2>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[#e2e8f0]">
+      <div class="p-4 text-center">
+        <p class="text-[11px] uppercase tracking-wide font-semibold" style="color:#64748b">Opening balance</p>
+        <p class="text-lg font-extrabold" style="color:#334155">{{ etb(report.openingBalance ?? 0) }}</p>
+      </div>
+      <div class="p-4 text-center">
+        <p class="text-[11px] uppercase tracking-wide font-semibold" style="color:#64748b">Total debit</p>
+        <p class="text-lg font-extrabold" style="color:#1e3a5f">{{ etb(report.totalDebit) }}</p>
+      </div>
+      <div class="p-4 text-center">
+        <p class="text-[11px] uppercase tracking-wide font-semibold" style="color:#64748b">Total credit</p>
+        <p class="text-lg font-extrabold" style="color:#1e3a5f">{{ etb(report.totalCredit) }}</p>
+      </div>
+      <div class="p-4 text-center">
+        <p class="text-[11px] uppercase tracking-wide font-semibold" style="color:#64748b">Ending balance</p>
+        <p class="text-lg font-extrabold" style="color:#065f46">{{ etb(report.balance) }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entries -->
+  <div class="fin-card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="fin-table">
+        <thead>
+          <tr>
+            <th (click)="sortBy('date')" class="cursor-pointer select-none">
+              <span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date') }}</span></span>
+            </th>
+            <th (click)="sortBy('accountName')" class="cursor-pointer select-none">
+              <span class="inline-flex items-center gap-1">Account <span class="material-icons text-[13px]">{{ sortIcon('accountName') }}</span></span>
+            </th>
+            <th>Type</th>
+            <th>Reference</th>
+            <th (click)="sortBy('description')" class="cursor-pointer select-none">
+              <span class="inline-flex items-center gap-1">Description <span class="material-icons text-[13px]">{{ sortIcon('description') }}</span></span>
+            </th>
+            <th (click)="sortBy('debit')" class="fin-text-right cursor-pointer select-none">
+              <span class="inline-flex items-center gap-1 justify-end">Debit <span class="material-icons text-[13px]">{{ sortIcon('debit') }}</span></span>
+            </th>
+            <th (click)="sortBy('credit')" class="fin-text-right cursor-pointer select-none">
+              <span class="inline-flex items-center gap-1 justify-end">Credit <span class="material-icons text-[13px]">{{ sortIcon('credit') }}</span></span>
+            </th>
+            <th (click)="sortBy('runningBalance')" class="fin-text-right cursor-pointer select-none">
+              <span class="inline-flex items-center gap-1 justify-end">Balance <span class="material-icons text-[13px]">{{ sortIcon('runningBalance') }}</span></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of sortedEntries(report)">
+            <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(row.date) }}</td>
+            <td class="text-xs">
+              <a *ngIf="row.accountId; else glNoLink"
+                 [routerLink]="['/finance/account-ledger', row.accountId]"
+                 [queryParams]="ledgerParams()"
+                 class="no-underline hover:underline font-semibold"
+                 style="color:#1e40af;cursor:pointer">{{ row.accountName || '—' }}</a>
+              <ng-template #glNoLink>
+                <span class="font-semibold" style="color:#1e293b">{{ row.accountName || '—' }}</span>
+              </ng-template>
+              <span class="block font-mono" style="color:#64748b">{{ row.accountNumber || '' }}</span>
+            </td>
+            <td>
+              <span class="fin-section-badge" style="background:#e2e8f0;color:#475569">{{ accountTypeLabel(row.accountType) }}</span>
+            </td>
+            <td class="font-mono text-xs" style="color:#64748b">{{ row.reference || row.ftp || '—' }}</td>
+            <td class="max-w-[300px]" style="color:#334155">{{ row.description || '—' }}</td>
+            <td class="fin-numeric" [class.opacity-40]="row.credit">{{ etb(row.debit) }}</td>
+            <td class="fin-numeric" [class.opacity-40]="!row.credit">{{ etb(row.creditAmount) }}</td>
+            <td class="fin-numeric font-semibold" style="color:#1e3a5f">{{ etb(row.runningBalance) }}</td>
+          </tr>
+          <tr *ngIf="report.entries.length === 0">
+            <td colspan="8" class="text-center py-10" style="color:#94a3b8">
+              No journal entries for this period<ng-container *ngIf="isFiltered()"> for the selected account</ng-container>.
+            </td>
+          </tr>
+          <tr class="fin-grand-total">
+            <td class="font-bold" colspan="5">Total</td>
+            <td class="fin-numeric">{{ etb(report.totalDebit) }}</td>
+            <td class="fin-numeric">{{ etb(report.totalCredit) }}</td>
+            <td class="fin-numeric">{{ etb(report.balance) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <ng-container *ngIf="(loading$ | async); else loadFailed">
+      <div class="flex items-center justify-center py-24 flex-col gap-3">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="text-sm font-semibold" style="color:#64748b">Loading general ledger…</p>
+      </div>
+    </ng-container>
+    <ng-template #loadFailed>
+      <div class="flex items-center justify-center py-24 flex-col gap-3">
+        <p class="text-sm" style="color:#64748b">{{ (error$ | async) || 'Unable to load general ledger. Please try again.' }}</p>
+        <button mat-flat-button color="primary" (click)="retry()" class="rounded-xl"
+                style="background:linear-gradient(135deg,#334155,#1e293b)">
+          <span class="material-icons mr-1" style="font-size:18px">refresh</span> Try again
+        </button>
+      </div>
+    </ng-template>
+  </div>
+</ng-template>

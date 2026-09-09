@@ -43,4 +43,15 @@ public class Withdrawal {
 
     @Column(name = "created_at", nullable = false)
     private Long createdAt;
+
+    // PENDING, POSTED, REJECTED - see WithdrawalStatus state machine
+    @Column(name = "status", nullable = false, length = 20)
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    private WithdrawalStatus status;
+
+    @Column(name = "approved_by")
+    private java.util.UUID approvedBy;
+
+    @Column(name = "approved_at")
+    private Long approvedAt;
 }

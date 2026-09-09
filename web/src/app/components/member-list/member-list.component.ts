@@ -1,184 +1,347 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, UntypedFormControl } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDividerModule } from '@angular/material/divider';
 
 import { Member } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { deleteMember } from '../../state/members.actions';
-import { selectAllMembers } from '../../state/members.selectors';
+import { deleteMember } from '../../state/members/members.actions';
+import { selectMembersStatus } from '../../state/members/members.selectors';
 import { MemberFormComponent } from '../member-form/member-form.component';
-import { GenericDetailDialogComponent, DetailDialogData } from '../generic-detail-dialog/generic-detail-dialog.component';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-member-list',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
     MatTableModule,
-    MatDialogModule
+    MatPaginatorModule,
+    MatSortModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
+    MatDividerModule,
+    RouterModule,
   ],
-  template: `
-    <section class="p-6" style="background:#f0f4f8;min-height:100%">
-      <div class="max-w-7xl mx-auto">
-
-        <!-- Page Header -->
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
-              <span class="material-icons text-white" style="font-size:20px">group</span>
-            </div>
-            <div>
-              <h1 class="text-xl font-bold" style="color:#1e293b">Member Registry</h1>
-              <p class="text-xs" style="color:#64748b">Manage cooperative members</p>
-            </div>
-          </div>
-          <button (click)="onAdd()"
-                  class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-0 cursor-pointer"
-                  style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;box-shadow:0 4px 12px rgba(59,130,246,0.35)">
-            <span class="material-icons" style="font-size:18px">person_add</span>
-            Add Member
-          </button>
-        </div>
-
-        <!-- Table Card -->
-        <div class="bg-white rounded-2xl overflow-hidden shadow-sm border" style="border-color:#e2e8f0">
-          <table mat-table [dataSource]="dataSource" class="w-full">
-
-            <ng-container matColumnDef="id">
-              <th mat-header-cell *matHeaderCellDef class="pl-6">ID</th>
-              <td mat-cell *matCellDef="let member" class="pl-6">
-                <span class="text-sm font-mono font-semibold" style="color:#1e3a5f">{{ member.idNumbe }}</span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="fullName">
-              <th mat-header-cell *matHeaderCellDef>Full Name</th>
-              <td mat-cell *matCellDef="let member">
-                <div class="flex items-center gap-2">
-                  <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                       style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
-                    {{ (member.fullName || '?').charAt(0).toUpperCase() }}
-                  </div>
-                  <span class="text-sm font-medium" style="color:#1e293b">{{ member.fullName }}</span>
-                </div>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="email">
-              <th mat-header-cell *matHeaderCellDef>Email</th>
-              <td mat-cell *matCellDef="let member">
-                <span class="text-sm" style="color:#475569">{{ member.email }}</span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="phone">
-              <th mat-header-cell *matHeaderCellDef>Phone</th>
-              <td mat-cell *matCellDef="let member">
-                <span class="text-sm font-mono" style="color:#475569">{{ member.phone }}</span>
-              </td>
-            </ng-container>
-
-              <ng-container matColumnDef="member_type">
-              <th mat-header-cell *matHeaderCellDef>Member Type</th>
-              <td mat-cell *matCellDef="let member">
-                <span class="text-sm font-mono" style="color:#475569">{{ member.memberType }}</span>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="is_male">
-              <th mat-header-cell *matHeaderCellDef>Gender</th>
-              <td mat-cell *matCellDef="let member">
-                <span class="text-sm font-mono" style="color:#475569">{{ member.isMale?"Male":"Female" }}</span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let member">
-                <div class="flex items-center gap-1">
-                  <button mat-icon-button (click)="onView(member)" class="!w-8 !h-8" style="color:#059669">
-                    <span class="material-icons" style="font-size:18px">visibility</span>
-                  </button>
-                  <button mat-icon-button (click)="onEdit(member)" class="!w-8 !h-8" style="color:#1e3a5f">
-                    <span class="material-icons" style="font-size:18px">edit</span>
-                  </button>
-                  <button mat-icon-button (click)="onDelete(member.id)" class="!w-8 !h-8" style="color:#ef4444">
-                    <span class="material-icons" style="font-size:18px">delete_outline</span>
-                  </button>
-                </div>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                class="transition-all duration-150 cursor-pointer"></tr>
-          </table>
-
-          <div *ngIf="dataSource.data.length === 0"
-               class="flex flex-col items-center justify-center py-16 text-center">
-            <span class="material-icons mb-3" style="font-size:48px;color:#cbd5e1">group</span>
-            <p class="font-medium" style="color:#64748b">No members registered yet</p>
-            <p class="text-sm mt-1" style="color:#94a3b8">Click "Add Member" to register the first member</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  `,
-  styles: []
+  templateUrl: './member-list.component.html',
+  styleUrls: ['./member-list.component.css'],
 })
-export class MemberListComponent implements OnInit {
-  members$!: Observable<Member[]>;
-  displayedColumns: string[] = ['id', 'fullName', 'email', 'phone', 'is_male', 'member_type', 'actions'];
+export class MemberListComponent implements OnInit, AfterViewInit {
+  membersData: Member[] = [];
+  membersTotalCount: number = 0;
+  membersIsLoading: boolean = false;
+
+  membersDisplayedColumns: string[] = [
+    'action',
+    'memberid',
+    'fullName',
+    'is_male',
+    'telephone',
+    'membership_date',
+    'member_branch_id',
+    'member_type',
+  ];
+
+  searchTextCtrl = new UntypedFormControl();
+  memberIdCtrl = new UntypedFormControl();
+  memberTypeFilter: number = -1;
+  genderFilter: number = -1;
+  statusFilter: number = -1;
+  branchFilter: string = '';
+
+  memberTypes = [
+    { id: -1, name: 'All' },
+    { id: 1, name: 'Normal' },
+    { id: 0, name: 'Child' },
+    { id: 2, name: 'Company/Group' },
+  ];
+  genderTypes = [
+    { id: -1, name: 'All' },
+    { id: 1, name: 'Male' },
+    { id: 0, name: 'Female' },
+  ];
+  statusTypes = [
+    { id: -1, name: 'All' },
+    { id: 1, name: 'Active' },
+    { id: 0, name: 'Inactive' },
+    { id: 2, name: 'Pending' },
+    { id: 3, name: 'Frozen' },
+  ];
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
+
   dataSource = new MatTableDataSource<Member>();
 
-  constructor(private store: Store<AppState>, private dialog: MatDialog) { }
+  private searchSubject = new Subject<void>();
+
+  constructor(
+    private store: Store<AppState>,
+    private dialog: MatDialog,
+    private apiService: ApiService
+  ) {
+    this.searchTextCtrl.valueChanges
+      .pipe(debounceTime(500), distinctUntilChanged())
+      .subscribe(() => this.searchMembers());
+    this.memberIdCtrl.valueChanges
+      .pipe(debounceTime(500), distinctUntilChanged())
+      .subscribe(() => this.searchMembers());
+  }
 
   ngOnInit(): void {
-    this.members$ = this.store.select(selectAllMembers);
-    this.members$.subscribe(members => {
-      this.dataSource.data = members ?? [];
+    this.store.select(selectMembersStatus).subscribe(status => {
+      this.membersIsLoading = status === 'loading';
     });
   }
 
-  onAdd() { this.openMemberDialog(); }
-  onEdit(member: Member) { this.openMemberDialog(member); }
-
-  onView(member: Member) {
-    const dialogData: DetailDialogData = {
-      title: 'Member Details',
-      subTitle: member.fullName,
-      icon: 'person',
-      data: member,
-      fields: [
-        { key: 'idNumbe', label: 'Member ID', type: 'text' },
-        { key: 'fullName', label: 'Full Name', type: 'text' },
-        { key: 'email', label: 'Email', type: 'text' },
-        { key: 'phone', label: 'Phone', type: 'text' },
-        { key: 'isMale', label: 'Gender', type: 'custom', formatFn: (val) => val ? 'Male' : 'Female' },
-        { key: 'memberType', label: 'Member Type', type: 'text' },
-        { key: 'membersipStatus', label: 'Membership Status', type: 'text' },
-        { key: 'branchId', label: 'Branch ID', type: 'text' },
-        { key: 'birthDate', label: 'Birth Date', type: 'date' },
-        { key: 'registrationDate', label: 'Registration Date', type: 'date' },
-      ]
-    };
-    this.dialog.open(GenericDetailDialogComponent, { data: dialogData });
+  ngAfterViewInit(): void {
+    this.dataSource.paginator = this.paginator;
+    setTimeout(() => this.searchMembers());
   }
 
-  private openMemberDialog(member?: Member) {
-    this.dialog.open(MemberFormComponent, { width: '500px', data: { member } });
+  searchMembers(): void {
+    this.membersIsLoading = true;
+
+    this.apiService.getMembers().subscribe({
+      next: (result) => {
+        const members = result || [];
+        const searchText = (this.searchTextCtrl.value || '').toLowerCase();
+        const memberId = (this.memberIdCtrl.value || '').toLowerCase();
+
+        let filtered = members;
+
+        if (searchText) {
+          filtered = filtered.filter(m =>
+            (m.fullName?.toLowerCase() || '').includes(searchText) ||
+            (m.telephone || '').includes(searchText) ||
+            (m.email || '').toLowerCase().includes(searchText)
+          );
+        }
+
+        if (memberId) {
+          filtered = filtered.filter(m =>
+            (m.idNumbe || m.memberid || '').toString().toLowerCase().includes(memberId)
+          );
+        }
+
+        if (this.memberTypeFilter >= 0) {
+          filtered = filtered.filter(m => {
+            const mt = m.memberType ?? m.member_type;
+            return mt === this.memberTypeFilter;
+          });
+        }
+
+        if (this.genderFilter >= 0) {
+          filtered = filtered.filter(m => {
+            const isMale = m.isMale != null ? m.isMale : m.is_male;
+            return (isMale ? 1 : 0) === this.genderFilter;
+          });
+        }
+
+        if (this.statusFilter >= 0) {
+          filtered = filtered.filter(m => {
+            const status = m.membersipStatus ?? m.status ?? 1;
+            return status === this.statusFilter;
+          });
+        }
+
+        this.membersData = filtered;
+        this.dataSource.data = filtered;
+        this.membersTotalCount = filtered.length;
+        if (this.paginator) {
+          this.paginator.length = filtered.length;
+          this.paginator.pageIndex = 0;
+        }
+        this.dataSource.paginator = this.paginator;
+        this.membersIsLoading = false;
+      },
+      error: () => {
+        this.membersIsLoading = false;
+      }
+    });
   }
 
-  onDelete(id: string) {
-    if (confirm('Are you sure you want to delete this member?')) {
-      this.store.dispatch(deleteMember({ id }));
+  fullName(member: Member): string {
+    return member.fullName || '';
+  }
+
+  getBranchName(branchId: string): string {
+    return branchId ? branchId.substring(0, 8) + '...' : '-';
+  }
+
+  onAdd(): void {
+    const dialogRef = this.dialog.open(MemberFormComponent, {
+      width: '90vw',
+      maxWidth: '1400px',
+      data: { mode: 'new' },
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) this.searchMembers();
+    });
+  }
+
+  onAddCompany(): void {
+    const dialogRef = this.dialog.open(MemberFormComponent, {
+      width: '90vw',
+      maxWidth: '1400px',
+      data: { mode: 'new', memberType: 2 },
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) this.searchMembers();
+    });
+  }
+
+  onAddChild(): void {
+    const dialogRef = this.dialog.open(MemberFormComponent, {
+      width: '90vw',
+      maxWidth: '1400px',
+      data: { mode: 'new', memberType: 0 },
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) this.searchMembers();
+    });
+  }
+
+  onEdit(member: Member): void {
+    const dialogRef = this.dialog.open(MemberFormComponent, {
+      width: '90vw',
+      maxWidth: '1400px',
+      data: { mode: 'edit', member },
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) this.searchMembers();
+    });
+  }
+
+  onDelete(member: Member): void {
+    if (confirm(`Are you sure you want to delete ${this.fullName(member)}?`)) {
+      this.store.dispatch(deleteMember({ id: member.id }));
+      this.searchMembers();
     }
   }
+
+  onReverse(member: Member): void {
+    if (confirm('Reverse this member?')) {
+      this.apiService.memberDo(member.id, 'reverse_member').subscribe({
+        next: () => {
+          this.searchMembers();
+        }
+      });
+    }
+  }
+
+  onFreeze(member: Member): void {
+    const reason = prompt('Enter reason for freezing account:');
+    if (reason) {
+      this.apiService.memberDo(member.id, 'frozen_account', { reason }).subscribe({
+        next: () => {
+          this.searchMembers();
+        }
+      });
+    }
+  }
+
+  onUnfreeze(member: Member): void {
+    if (confirm('Unfreeze this account?')) {
+      this.apiService.memberDo(member.id, 'unfrozen_account').subscribe({
+        next: () => {
+          this.searchMembers();
+        }
+      });
+    }
+  }
+
+  onConfirmationEmail(member: Member): void {
+    this.apiService.emailConfirmation(member.id).subscribe({
+      next: () => alert('Confirmation email sent.')
+    });
+  }
+
+  isAdultChild(member: Member): boolean {
+    if (member.memberType === 0 && member.birthDate) {
+      const age = Math.floor((Date.now() - member.birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+      return age >= 18;
+    }
+    return false;
+  }
+
+  onTransferToAdult(member: Member): void {
+    if (confirm('Transfer this child member to adult?')) {
+      this.apiService.memberDo(member.id, 'transfer_to_adult').subscribe({
+        next: () => this.searchMembers()
+      });
+    }
+  }
+
+  uploadExcel(event: any): void {
+    const file = event.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    this.membersIsLoading = true;
+    this.apiService.uploadExcel(fd).subscribe({
+      next: () => {
+        this.searchMembers();
+      },
+      error: () => {
+        this.membersIsLoading = false;
+      }
+    });
+  }
+
+  uploadGroupExcel(event: any): void {
+    const file = event.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    this.membersIsLoading = true;
+    this.apiService.uploadGroupExcel(fd).subscribe({
+      next: () => {
+        this.searchMembers();
+      },
+      error: () => {
+        this.membersIsLoading = false;
+      }
+    });
+  }
+
+  onBulkSms(): void {
+    alert('Bulk SMS feature - would open SMS dialog');
+  }
+
+  onBulkEmail(): void {
+    alert('Bulk Email feature - would open email dialog');
+  }
+
+  onSortChange(): void {
+    this.paginator.pageIndex = 0;
+    this.searchMembers();
+  }
+
+
 }

@@ -1,0 +1,98 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#0d9488,#115e59)">
+      <span class="material-icons text-white" style="font-size:20px">savings</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Statement of Changes in Equity</h1>
+      <p class="text-xs" style="color:#64748b">Share capital, reserves and retained earnings roll-forward</p>
+    </div>
+    <mat-form-field appearance="outline" class="min-w-[190px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#0d9488,#115e59)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <!-- Statement table -->
+  <div class="fin-card overflow-hidden" *ngIf="hasRows(report)">
+    <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+      <h2 class="font-bold text-sm uppercase tracking-wider" style="color:#0f766e">Equity statement</h2>
+      <span class="text-xs" style="color:#64748b">{{ windowLabel(report.from, report.to) }}</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="fin-table fin-report-table">
+        <thead>
+          <tr>
+            <th class="left">Description</th>
+            <th class="fin-text-right">Share Capital</th>
+            <th class="fin-text-right">Statutory Reserve</th>
+            <th class="fin-text-right">Retained Earnings</th>
+            <th class="fin-text-right">Total Equity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let row of report.rows; let last = last">
+            <tr [ngClass]="{ 'fin-profloss': isBalanceRow(row) || last }">
+              <td class="row-label">
+                <a *ngIf="rowLink(report, row); else plainLabel"
+                   [routerLink]="rowLink(report, row)!"
+                   [queryParams]="rowQuery(report, row)"
+                   class="no-underline hover:underline font-medium"
+                   style="color:#0d9488;cursor:pointer">
+                  {{ row.description }}
+                  <span class="material-icons align-middle" style="font-size:14px;color:#0d9488">chevron_right</span>
+                </a>
+                <ng-template #plainLabel>
+                  <span [class.font-semibold]="isBalanceRow(row)" [class.text-gray-800]="isBalanceRow(row)">
+                    {{ row.description }}
+                  </span>
+                </ng-template>
+              </td>
+              <td class="fin-numeric" [class.negative]="negative(row.shareCapital)"><strong *ngIf="isBalanceRow(row)">{{ cell(row.shareCapital) }}</strong><ng-container *ngIf="!isBalanceRow(row)">{{ cell(row.shareCapital) }}</ng-container></td>
+              <td class="fin-numeric" [class.negative]="negative(row.statutoryReserve)"><strong *ngIf="isBalanceRow(row)">{{ cell(row.statutoryReserve) }}</strong><ng-container *ngIf="!isBalanceRow(row)">{{ cell(row.statutoryReserve) }}</ng-container></td>
+              <td class="fin-numeric" [class.negative]="negative(row.retainedEarnings)"><strong *ngIf="isBalanceRow(row)">{{ cell(row.retainedEarnings) }}</strong><ng-container *ngIf="!isBalanceRow(row)">{{ cell(row.retainedEarnings) }}</ng-container></td>
+              <td class="fin-numeric font-semibold" [class.negative]="negative(row.totalEquity)">{{ cell(row.totalEquity) }}</td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="fin-card p-8 text-center" *ngIf="!hasRows(report)" style="color:#94a3b8">
+    No equity movement recorded for the selected period.
+  </div>
+
+  <!-- Footnote -->
+  <div class="fin-card p-5 mt-5 flex items-start gap-3">
+    <span class="material-icons" style="color:#0d9488;font-size:22px">info</span>
+    <div>
+      <p class="font-semibold text-sm" style="color:#1e293b">How equity moves</p>
+      <p class="text-xs mt-1" style="color:#64748b">
+        The statement starts from the opening balance, applies the period's net surplus, the statutory reserve transfer,
+        additional share contributions and any dividends, and reconciles to the closing equity balance. Click a
+        non-balance row to drill into the underlying account ledger or income statement.
+      </p>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <div *ngIf="loading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#64748b">Loading statement of changes in equity…</p>
+    </div>
+  </div>
+</ng-template>

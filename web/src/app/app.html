@@ -1,27 +1,53 @@
-<div class="flex flex-row h-screen w-full overflow-hidden" style="background:#f0f4f8">
-  <app-sidebar class="flex-shrink-0"></app-sidebar>
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-    <!-- Top Header -->
-    <header style="background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%); height:64px"
-      class="flex items-center justify-between px-8 shadow-lg flex-shrink-0">
-      <div class="flex items-center gap-3">
-        <span class="material-icons" style="color:#10b981;font-size:28px">account_balance</span>
-        <span class="text-white font-bold text-lg tracking-widest uppercase">SACCO System</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="text-right hidden sm:block">
-          <p class="text-white text-sm font-semibold leading-none">Admin User</p>
-          <p class="text-blue-300 text-xs mt-0.5">System Administrator</p>
+<ng-container *ngIf="isLoggedIn$ | async; else publicRoute">
+  <div class="flex flex-row h-screen w-full overflow-hidden" style="background:#f0f4f8">
+    <!-- Mobile backdrop -->
+    <div *ngIf="sidebarOpen" (click)="closeSidebar()"
+         class="fixed inset-0 z-40 bg-black/50 lg:hidden"></div>
+    <!-- Sidebar drawer -->
+    <div class="app-sidebar-drawer" [class.open]="sidebarOpen">
+      <app-sidebar></app-sidebar>
+    </div>
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <!-- Top Header -->
+      <header style="background: linear-gradient(135deg, var(--primary,#1e3a5f) 0%, var(--primary-dark,#0f2744) 100%); height:64px"
+        class="flex items-center justify-between px-4 lg:px-8 shadow-lg flex-shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <button (click)="toggleSidebar()"
+                  class="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg border-0 cursor-pointer shrink-0"
+                  style="background:rgba(255,255,255,0.12);color:white">
+            <span class="material-icons" style="font-size:22px">menu</span>
+          </button>
+          <ng-container *ngIf="settingsService.settings()['logo_url']; else headerDefaultLogo">
+            <img [src]="settingsService.settings()['logo_url']" class="w-12 h-12 rounded-full object-contain" alt="Logo" />
+          </ng-container>
+          <ng-template #headerDefaultLogo>
+            <span class="material-icons" style="color:var(--accent,#10b981);font-size:36px">account_balance</span>
+          </ng-template>
+          <span class="text-white font-bold text-lg tracking-widest uppercase truncate">{{ settingsService.settings()['company_name'] || 'SACCO' }} System</span>
         </div>
-        <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
-          style="background:linear-gradient(135deg,#10b981,#059669);color:white">
-          A
+        <div class="flex items-center gap-4" *ngIf="user$ | async as user">
+          <div class="text-right hidden sm:block">
+            <p class="text-white text-sm font-semibold leading-none">{{ user.username || 'Admin User' }}</p>
+            <p class="text-blue-300 text-xs mt-0.5">{{ user.roles?.join(', ') || 'System Administrator' }}</p>
+          </div>
+          <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
+            style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669));color:white">
+            {{ (user.username || 'A').charAt(0).toUpperCase() }}
+          </div>
+          <button (click)="doLogout()"
+            class="ml-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded shadow-sm transition">
+            Logout
+          </button>
         </div>
-      </div>
-    </header>
-    <!-- Page Content -->
-    <main class="flex-1 overflow-auto" style="background:#f0f4f8">
-      <router-outlet></router-outlet>
-    </main>
+      </header>
+      <!-- Page Content -->
+      <main class="flex-1 overflow-auto" style="background:#f0f4f8">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   </div>
-</div>
+</ng-container>
+
+<ng-template #publicRoute>
+  <router-outlet></router-outlet>
+</ng-template>

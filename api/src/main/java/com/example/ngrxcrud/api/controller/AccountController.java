@@ -63,6 +63,7 @@ public class AccountController {
         existing.setIsActive(incoming.getIsActive());
         existing.setIsParent(incoming.getIsParent());
         existing.setAccountCategory(incoming.getAccountCategory());
+        existing.setClassificationId(incoming.getClassificationId());
         return accountRepository.save(existing);
     }
 

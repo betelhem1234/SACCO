@@ -8,7 +8,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatRadioModule } from '@angular/material/radio';
 
 import { Beneficiary } from '@sacco/shared-models';
@@ -27,7 +26,6 @@ import { Subject, takeUntil } from 'rxjs';
     MatButtonModule, MatIconModule, MatDialogModule,
     MatDatepickerModule, MatRadioModule,
   ],
-  providers: [provideNativeDateAdapter()],
   templateUrl: './beneficiary-form.component.html',
   styleUrls: ['./beneficiary-form.component.css']
 })

@@ -8,6 +8,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
 import { SettingsService } from '../../services/settings.service';
 import { Member, ShareSubscription } from '@sacco/shared-models';
@@ -18,7 +19,7 @@ import { addShareSubscription, updateShareSubscription } from '../../state/share
 @Component({
   selector: 'app-subscription-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatSelectModule, MatDialogModule, MatIconModule],
+  imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatSelectModule, MatDialogModule, MatIconModule, MatSnackBarModule],
   templateUrl: './subscription-form.component.html',
   styleUrls: ['./subscription-form.component.css']
 })
@@ -26,6 +27,7 @@ export class SubscriptionFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private store = inject(Store<AppState>);
   private settingsService = inject(SettingsService);
+  private snackBar = inject(MatSnackBar);
 
   members: Member[] = [];
 
@@ -52,6 +54,14 @@ export class SubscriptionFormComponent implements OnInit {
   get calculatedUnits(): string {
     const v = this.form.get('totalAmount')?.value || 0;
     return v > 0 ? (v / this.shareUnitPrice).toFixed(2) : '0';
+  }
+
+  get settingsBlocked(): boolean {
+    return !this.settingsService.shareSettingsConfigured();
+  }
+
+  get missingSettingsText(): string {
+    return this.settingsService.missingShareSettings().map(k => k.label).join(', ');
   }
 
   isEdit = false;
@@ -90,11 +100,23 @@ export class SubscriptionFormComponent implements OnInit {
 
   onSubmit() {
     if (this.form.invalid) return;
+    if (this.settingsBlocked) {
+      this.snackBar.open(
+        `Configure Share Settings first: ${this.missingSettingsText}`,
+        'Close', { duration: 6000 });
+      return;
+    }
     const val = this.form.getRawValue();
     if (val.units < this.minUnits) {
+      this.snackBar.open(
+        `Minimum subscription is ${this.minUnits} share unit${this.minUnits > 1 ? 's' : ''} (${(this.minUnits * this.shareUnitPrice).toFixed(2) || '0'} amount).`,
+        'Close', { duration: 5000 });
       return;
     }
     if (val.units > this.maxUnits) {
+      this.snackBar.open(
+        `Maximum subscription is ${this.maxUnits} share units (${(this.maxUnits * this.shareUnitPrice).toFixed(2) || '0'} amount).`,
+        'Close', { duration: 5000 });
       return;
     }
     const payload: ShareSubscription = {

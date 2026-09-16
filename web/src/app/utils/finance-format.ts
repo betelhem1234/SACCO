@@ -52,6 +52,23 @@ export function fmtDateTime(epoch: number | null | undefined): string {
   });
 }
 
+/** Generic column sort for report tables. Numerics compare as numbers (e.g. epoch dates), text alphabetically. */
+export function sortRows<T>(rows: T[], col: string, asc: boolean): T[] {
+  const dir = asc ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const av = (a as Record<string, unknown>)[col];
+    const bv = (b as Record<string, unknown>)[col];
+    if (typeof av === 'number' && typeof bv === 'number') return ((av as number) - (bv as number)) * dir;
+    return String(av ?? '').localeCompare(String(bv ?? '')) * dir;
+  });
+}
+
+/** Material-style sort icon for a clickable header. */
+export function sortIcon(col: string, sortCol: string, asc: boolean): string {
+  if (sortCol !== col) return 'unfold_more';
+  return asc ? 'arrow_upward' : 'arrow_downward';
+}
+
 /** label for an account-type code (1..5) */
 export function accountTypeLabel(code: number | null | undefined): string {
   switch (code) {

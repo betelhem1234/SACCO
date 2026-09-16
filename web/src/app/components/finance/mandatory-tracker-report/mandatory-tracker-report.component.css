@@ -1,0 +1,94 @@
+.tracker-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+  border-right: 1px solid #e2e8f0;
+}
+
+thead .tracker-sticky {
+  background: #f8fafc;
+  z-index: 3;
+}
+
+.tracker-matrix .tracker-month {
+  min-width: 74px;
+  text-align: center;
+}
+
+.tracker-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+
+.tracker-cell-paid {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.tracker-cell-partial {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.tracker-cell-unpaid {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.tracker-cell-empty {
+  color: #cbd5e1;
+}
+
+.tracker-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+}
+
+.tracker-status-paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.tracker-status-partial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tracker-status-unpaid {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tracker-status-neutral {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.tracker-dot {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.tracker-dot-paid {
+  background: #10b981;
+}
+
+.tracker-dot-partial {
+  background: #f59e0b;
+}
+
+.tracker-dot-unpaid {
+  background: #ef4444;
+}

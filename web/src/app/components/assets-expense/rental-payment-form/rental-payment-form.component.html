@@ -1,0 +1,61 @@
+<div>
+  <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">payments</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">{{ data.payment ? 'Edit Rental Payment' : 'Record Rental Payment' }}</h2>
+      <p class="text-xs m-0" style="color:#93c5fd">Coverage spans the period being paid for</p>
+    </div>
+  </div>
+  <mat-dialog-content class="px-6 py-5">
+    <form [formGroup]="form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <mat-form-field appearance="outline" class="w-full col-span-2">
+        <mat-label>Contract</mat-label>
+        <mat-select formControlName="contractId" required>
+          <mat-option *ngFor="let c of contracts" [value]="c.id">
+            {{ c.propertyName }} — {{ c.frequency }} ({{ c.amountPerPeriod | number }} ETB)
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Paid From</mat-label>
+        <input matInput formControlName="paidFrom" type="date" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Paid To</mat-label>
+        <input matInput formControlName="paidTo" type="date" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Amount Paid (ETB)</mat-label>
+        <input matInput formControlName="amountPaid" type="number" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Pay Date</mat-label>
+        <input matInput formControlName="payDate" type="date" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Paid By</mat-label>
+        <input matInput formControlName="paidBy" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full col-span-2">
+        <mat-label>Payment Account (bank / cash)</mat-label>
+        <mat-select formControlName="paymentAccountId">
+          <mat-option *ngFor="let acc of accounts$ | async" [value]="acc.id">{{ acc.name }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full col-span-2">
+        <mat-label>Note</mat-label>
+        <textarea matInput formControlName="note" rows="2"></textarea>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0;margin-top:auto">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button [disabled]="!form.valid" (click)="submit()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white;box-shadow:0 4px 12px rgba(30,58,95,0.3)">
+      {{ data.payment ? 'Update Payment' : 'Save Payment' }}
+    </button>
+  </mat-dialog-actions>
+</div>

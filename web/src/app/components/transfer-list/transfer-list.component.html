@@ -19,7 +19,7 @@
     </div>
 
     <div class="bg-white rounded-2xl overflow-x-auto md:overflow-x-visible shadow-sm border" style="border-color:#e2e8f0">
-      <table mat-table [dataSource]="dataSource" class="w-full">
+      <table mat-table [dataSource]="dataSource" matSort class="w-full">
 
         <ng-container matColumnDef="sourceMember">
           <th mat-header-cell *matHeaderCellDef class="pl-6">Source Member</th>
@@ -62,8 +62,8 @@
         </ng-container>
 
         <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let row">{{ row.date | date:'yyyy-MM-dd' }}</td>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+          <td mat-cell *matCellDef="let row">{{ row.date | date }}</td>
         </ng-container>
 
         <ng-container matColumnDef="actions">

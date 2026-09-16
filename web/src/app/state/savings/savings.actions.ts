@@ -24,3 +24,7 @@ export const approveSavingFailure = createAction('[SAVING] Approve Saving Failur
 export const rejectSaving = createAction('[SAVING] Reject Saving', props<{ id: string }>());
 export const rejectSavingSuccess = createAction('[SAVING] Reject Saving Success', props<{ saving: Saving }>());
 export const rejectSavingFailure = createAction('[SAVING] Reject Saving Failure', props<{ error: any }>());
+
+export const reverseSaving = createAction('[SAVING] Reverse Saving', props<{ id: string }>());
+export const reverseSavingSuccess = createAction('[SAVING] Reverse Saving Success', props<{ saving: Saving }>());
+export const reverseSavingFailure = createAction('[SAVING] Reverse Saving Failure', props<{ error: any }>());

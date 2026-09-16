@@ -16,3 +16,15 @@ export const updateShareSubscriptionFailure = createAction('[SHARE_SUBSCRIPTION]
 export const deleteShareSubscription = createAction('[SHARE_SUBSCRIPTION] Delete Share Subscription', props<{ id: string }>());
 export const deleteShareSubscriptionSuccess = createAction('[SHARE_SUBSCRIPTION] Delete Share Subscription Success', props<{ id: string }>());
 export const deleteShareSubscriptionFailure = createAction('[SHARE_SUBSCRIPTION] Delete Share Subscription Failure', props<{ error: any }>());
+
+export const approveShareSubscription = createAction('[SHARE_SUBSCRIPTION] Approve Share Subscription', props<{ id: string; approvedBy?: string }>());
+export const approveShareSubscriptionSuccess = createAction('[SHARE_SUBSCRIPTION] Approve Share Subscription Success', props<{ shareSubscription: ShareSubscription }>());
+export const approveShareSubscriptionFailure = createAction('[SHARE_SUBSCRIPTION] Approve Share Subscription Failure', props<{ error: any }>());
+
+export const rejectShareSubscription = createAction('[SHARE_SUBSCRIPTION] Reject Share Subscription', props<{ id: string }>());
+export const rejectShareSubscriptionSuccess = createAction('[SHARE_SUBSCRIPTION] Reject Share Subscription Success', props<{ shareSubscription: ShareSubscription }>());
+export const rejectShareSubscriptionFailure = createAction('[SHARE_SUBSCRIPTION] Reject Share Subscription Failure', props<{ error: any }>());
+
+export const reverseShareSubscription = createAction('[SHARE_SUBSCRIPTION] Reverse Share Subscription', props<{ id: string }>());
+export const reverseShareSubscriptionSuccess = createAction('[SHARE_SUBSCRIPTION] Reverse Share Subscription Success', props<{ shareSubscription: ShareSubscription }>());
+export const reverseShareSubscriptionFailure = createAction('[SHARE_SUBSCRIPTION] Reverse Share Subscription Failure', props<{ error: any }>());

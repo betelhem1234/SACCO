@@ -44,14 +44,14 @@
                 <table class="fin-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
+                      <th (click)="toggleSort('inflows')" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date', 'date', inflowAsc) }}</span></span></th>
                       <th>Description</th>
                       <th>Account</th>
                       <th class="fin-text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let row of report.inflows">
+                    <tr *ngFor="let row of sortedInflows(report.inflows)">
                       <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(row.date) }}</td>
                       <td class="max-w-[280px] truncate">
                         <span style="color:#1e293b">{{ row.description || '—' }}</span>
@@ -91,14 +91,14 @@
                 <table class="fin-table">
                   <thead>
                     <tr>
-                      <th>Date</th>
+                      <th (click)="toggleSort('outflows')" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date', 'date', outflowAsc) }}</span></span></th>
                       <th>Description</th>
                       <th>Account</th>
                       <th class="fin-text-right">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let row of report.outflows">
+                    <tr *ngFor="let row of sortedOutflows(report.outflows)">
                       <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(row.date) }}</td>
                       <td class="max-w-[280px] truncate">
                         <span style="color:#1e293b">{{ row.description || '—' }}</span>

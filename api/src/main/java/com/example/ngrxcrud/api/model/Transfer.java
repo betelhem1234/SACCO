@@ -46,4 +46,43 @@ public class Transfer {
 
     @Column(name = "created_at", nullable = false)
     private Long createdAt;
+
+    // PENDING, FEE_PAID, APPROVED, POSTED, REJECTED - see TransferStatus state machine
+    @Column(name = "status", length = 20)
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    private TransferStatus status;
+
+    @Column(name = "approved_by")
+    private java.util.UUID approvedBy;
+
+    @Column(name = "approved_at")
+    private Long approvedAt;
+
+    // Service fee (computed from the flat + percentage settings when enabled)
+    @Column(name = "service_fee")
+    private Double serviceFee;
+
+    // Bank account used to pay the service fee (feeSource = BANK)
+    @Column(name = "bank_id")
+    private java.util.UUID bankId;
+
+    // NONE / SAVING / BANK - where the service fee is paid from
+    @Column(name = "fee_source", length = 20)
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    private TransferFeeSource feeSource;
+
+    @Column(name = "fee_paid_by")
+    private java.util.UUID feePaidBy;
+
+    @Column(name = "fee_paid_at")
+    private Long feePaidAt;
+
+    @Column(name = "fee_reference")
+    private String feeReference;
+
+    @Column(name = "executed_by")
+    private java.util.UUID executedBy;
+
+    @Column(name = "executed_at")
+    private Long executedAt;
 }

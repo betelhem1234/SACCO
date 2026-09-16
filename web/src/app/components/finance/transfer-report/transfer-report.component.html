@@ -1,0 +1,359 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#3b82f6,#1e40af)">
+      <span class="material-icons text-white" style="font-size:20px">swap_horiz</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Transfer Report</h1>
+      <p class="text-xs" style="color:#64748b">{{ periodLabel(presetId) }} · {{ filteredSummary(report).transactionCount }} transfer(s) shown</p>
+    </div>
+    <mat-button-toggle-group [value]="view" (change)="setView($event.value)" class="rounded-xl overflow-hidden">
+      <mat-button-toggle *ngFor="let v of viewOptions" [value]="v.id" class="!text-xs">
+        <span class="material-icons mr-1" style="font-size:16px">{{ v.icon }}</span>{{ v.label }}
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+    <mat-form-field appearance="outline" class="min-w-[190px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#3b82f6,#1e40af)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ windowLabel(report.from, report.to) }}</span>
+  </p>
+
+  <!-- Summary strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Total transferred</p>
+      <p class="text-xl font-extrabold" style="color:#065f46">{{ etb(report.grandTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">{{ num(report.savingCount + report.shareCount, 0) }} transfer(s)</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Saving transfer total</p>
+      <p class="text-xl font-extrabold" style="color:#b45309">{{ etb(report.savingTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">{{ num(report.savingCount, 0) }} saving transfer(s)</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Share transfer total</p>
+      <p class="text-xl font-extrabold" style="color:#1d4ed8">{{ etb(report.shareTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">{{ num(report.shareCount, 0) }} share transfer(s)</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Share units transferred</p>
+      <p class="text-xl font-extrabold" style="color:#1d4ed8">{{ num(report.shareUnitsTotal, 2) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">{{ num(report.shareCount, 0) }} share transfer(s)</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Source ledger debits</p>
+      <p class="text-xl font-extrabold" style="color:#1e40af">{{ etb(report.sourceLedgerTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">saving debits + share out</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Destination ledger credits</p>
+      <p class="text-xl font-extrabold" style="color:#166534">{{ etb(report.destinationLedgerTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">saving credits + share in</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Difference (record vs ledger)</p>
+      <p class="text-xl font-extrabold" [style.color]="report.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(report.difference) }}</p>
+    </div>
+  </div>
+
+  <!-- Transfer type filter -->
+  <div class="no-print mb-5 flex flex-wrap items-center gap-3">
+    <span class="text-xs font-bold uppercase tracking-wider" style="color:#64748b">Transfer type</span>
+    <mat-button-toggle-group [value]="typeFilter" (valueChange)="setTypeFilter($event)">
+      <mat-button-toggle *ngFor="let f of typeFilters" [value]="f.id">{{ f.label }}</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  <ng-container *ngIf="sortedTxs(report) as txs">
+    <ng-container *ngIf="filteredMembers(report) as members">
+      <ng-container *ngIf="filteredSummary(report) as summary">
+  <div *ngIf="view === 'TABLE'" class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <div class="xl:col-span-2 space-y-5">
+      <!-- By member -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+            Transfers by Member
+          </h2>
+          <span class="fin-section-badge" style="background:#d1fae5;color:#065f46">{{ members.length }} member(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th class="fin-text-right">Source</th>
+                <th class="fin-text-right">Destination</th>
+                <th class="fin-text-right">Net effect</th>
+              </tr>
+              <tr class="fin-subhead">
+                <th></th>
+                <th class="fin-text-right">qty · amount</th>
+                <th class="fin-text-right">qty · amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of members">
+                <td>
+                  <span class="font-medium" style="color:#1e293b">{{ r.memberName }}</span>
+                  <span class="text-xs ml-1" style="color:#94a3b8">{{ r.memberNumber }}</span>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  <span class="text-xs" style="color:#94a3b8">{{ num(r.sourceCount, 0) }}×</span>
+                  <span class="block font-semibold" style="color:#dc2626">{{ etb(r.sourceAmount) }}</span>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  <span class="text-xs" style="color:#94a3b8">{{ num(r.destinationCount, 0) }}×</span>
+                  <span class="block font-semibold" style="color:#065f46">{{ etb(r.destinationAmount) }}</span>
+                </td>
+                <td class="fin-numeric font-semibold" [style.color]="r.netAmount === 0 ? '#64748b' : (r.netAmount > 0 ? '#065f46' : '#dc2626')">{{ etb(r.netAmount) }}</td>
+              </tr>
+            </tbody>
+            <tbody *ngIf="members.length === 0">
+              <tr>
+                <td colspan="4" class="text-center py-8" style="color:#94a3b8">No transfers recorded in this period.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Transactions register -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#3b82f6"></span>
+            Transfer Register
+          </h2>
+          <span class="fin-section-badge" style="background:#dbeafe;color:#1e40af">{{ txs.length }} transfer(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th (click)="toggleDateSort()" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date', 'date', sortAsc) }}</span></span></th>
+                <th>Type</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th class="fin-text-right">Amount</th>
+                <th>Reference (FTP)</th>
+                <th>Ledger</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tx of txs">
+                <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(tx.date) }}</td>
+                <td><span class="fin-chip" [class]="typeClass(tx.type)">{{ typeLabel(tx.type) }}</span></td>
+                <td>
+                  <span class="font-medium" style="color:#1e293b">{{ tx.sourceMemberName }}</span>
+                  <span class="block text-xs" style="color:#94a3b8">{{ tx.sourceMemberNumber }} · {{ tx.sourceSavingTypeName || '—' }}</span>
+                </td>
+                <td>
+                  <span class="font-medium" style="color:#1e293b">{{ tx.destinationMemberName }}</span>
+                  <span class="block text-xs" style="color:#94a3b8">{{ tx.destinationMemberNumber }} · {{ tx.destinationSavingTypeName || '—' }}</span>
+                </td>
+                <td class="fin-numeric font-semibold" style="color:#065f46">
+                  {{ etb(tx.amount) }}
+                  <span *ngIf="tx.type === 'SHARE'" class="block text-xs" style="color:#94a3b8">{{ num(tx.units || 0, 2) }} units</span>
+                </td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ tx.ftp || '—' }}</td>
+                <td><span class="fin-chip" [class]="reconciledClass(tx.reconciled)">{{ reconciledLabel(tx.reconciled) }}</span></td>
+              </tr>
+            </tbody>
+            <tbody *ngIf="txs.length === 0">
+              <tr>
+                <td colspan="7" class="text-center py-8" style="color:#94a3b8">No transfers in this period.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary sidebar -->
+    <div class="space-y-5">
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Summary</h3>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Total transferred</dt>
+            <dd class="font-semibold" style="color:#1e293b">{{ etb(summary.grandTotal) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Transfers</dt>
+            <dd class="font-semibold" style="color:#1e293b">{{ num(summary.savingCount, 0) }} saving · {{ num(summary.shareCount, 0) }} share</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Share units</dt>
+            <dd class="font-semibold" style="color:#1d4ed8">{{ num(summary.shareUnitsTotal, 2) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Source debit</dt>
+            <dd class="font-semibold" style="color:#1e40af">{{ etb(summary.sourceLedgerTotal) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Destination credit</dt>
+            <dd class="font-semibold" style="color:#166534">{{ etb(summary.destinationLedgerTotal) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Difference</dt>
+            <dd class="font-extrabold" [style.color]="summary.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(summary.difference) }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Reconciliation status</h3>
+        <div class="flex items-center gap-3">
+          <span class="material-icons" [style.color]="summary.difference === 0 ? '#10b981' : '#dc2626'" style="font-size:28px">
+            {{ summary.difference === 0 ? 'verified' : 'error_outline' }}
+          </span>
+          <p class="text-xs" style="color:#475569">
+            <ng-container *ngIf="summary.difference === 0; else mismatched">
+              Transfer records match the finance (journal) system for this period.
+            </ng-container>
+            <ng-template #mismatched>
+              Transfers differ from ledger source debits by {{ etb(abs(summary.difference)) }}.
+            </ng-template>
+          </p>
+        </div>
+      </div>
+  </div>
+  </div>
+
+      <!-- Chart view -->
+      <ng-container *ngIf="view === 'CHART'">
+        <div *ngIf="chartsEmpty(report); else chartContent" class="fin-card p-10 text-center" style="color:#94a3b8">
+          <span class="material-icons" style="font-size:36px">insights</span>
+          <p class="mt-2 text-sm">No transfer data to chart for this period.<br>Switch to Table view or widen the period.</p>
+        </div>
+        <ng-template #chartContent>
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <!-- Monthly transfer trend -->
+            <div class="fin-card overflow-hidden xl:col-span-2">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+                <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+                  <span class="w-2 h-2 rounded-full" style="background:#0d9488"></span>
+                  Monthly Transfer Trend
+                </h2>
+                <span class="fin-section-badge" style="background:#ccfbf1;color:#0f766e">{{ monthlyTrend(report).length }} month(s)</span>
+              </div>
+              <div class="p-4">
+                <ng-container *ngIf="monthlyTrend(report) as trend">
+                  <svg *ngIf="trend.length > 0" viewBox="0 0 640 260" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                      <linearGradient id="tfTrendBar" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#2dd4bf"></stop>
+                        <stop offset="100%" stop-color="#0d9488"></stop>
+                      </linearGradient>
+                    </defs>
+                    <rect *ngFor="let b of trend" [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.w" [attr.height]="b.h" rx="4" fill="url(#tfTrendBar)">
+                      <title>{{ b.label }} · {{ etb(b.value) }}</title>
+                    </rect>
+                    <text *ngFor="let b of trend" [attr.x]="b.x + b.w / 2" [attr.y]="b.y - 6" text-anchor="middle" font-size="10" font-weight="600" fill="#0f766e">{{ b.display }}</text>
+                    <text *ngFor="let b of trend" [attr.x]="b.x + b.w / 2" [attr.y]="252" text-anchor="middle" font-size="10" fill="#64748b">{{ b.label }}</text>
+                  </svg>
+                  <p *ngIf="trend.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No transfers in this period to chart.</p>
+                </ng-container>
+              </div>
+            </div>
+
+            <!-- Saving vs share composition -->
+            <div class="fin-card overflow-hidden">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+                <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+                  <span class="w-2 h-2 rounded-full" style="background:#3b82f6"></span>
+                  Saving vs Share Composition
+                </h2>
+                <span class="fin-section-badge" style="background:#dbeafe;color:#1e40af">{{ filteredSummary(report).transactionCount }} transfer(s)</span>
+              </div>
+              <div class="p-4">
+                <div class="flex flex-col items-center gap-4">
+                  <svg viewBox="0 0 220 200" class="w-full max-w-[220px] h-auto">
+                    <g transform="translate(110 100)">
+                      <circle r="70" fill="none" stroke="#e2e8f0" stroke-width="26"></circle>
+                      <circle *ngFor="let s of splitSlices(report)" r="70" fill="none" [attr.stroke]="s.color" stroke-width="26"
+                              [attr.stroke-dasharray]="s.dash" [attr.transform]="'rotate(' + s.rotate + ')'">
+                        <title>{{ s.name }} · {{ etb(s.value) }} ({{ num(s.percent, 1) }}%)</title>
+                      </circle>
+                      <text x="0" y="-6" text-anchor="middle" font-size="11" fill="#64748b">Transferred</text>
+                      <text x="0" y="15" text-anchor="middle" font-size="16" font-weight="700" fill="#1e293b">{{ etb(filteredSummary(report).grandTotal) }}</text>
+                    </g>
+                  </svg>
+                  <div class="w-full space-y-1.5">
+                    <div *ngFor="let s of splitSlices(report)" class="flex items-center justify-between text-sm py-0.5">
+                      <span class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full inline-block" [style.background]="s.color"></span>
+                        <span style="color:#334155">{{ s.name }}</span>
+                      </span>
+                      <span class="font-semibold" style="color:#1e293b">{{ etb(s.value) }} <span class="text-xs" style="color:#94a3b8">({{ num(s.percent, 1) }}%)</span></span>
+                    </div>
+                    <div *ngIf="splitSlices(report).length === 0" class="text-center py-6 text-sm" style="color:#94a3b8">No transfers to break down.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top transfer members -->
+            <div class="fin-card overflow-hidden">
+              <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+                <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+                  <span class="w-2 h-2 rounded-full" style="background:#8b5cf6"></span>
+                  Top Transfer Members
+                </h2>
+                <span class="fin-section-badge" style="background:#ede9fe;color:#5b21b6">top {{ topTransfer(report).length }}</span>
+              </div>
+              <div class="p-4">
+                <ng-container *ngIf="topTransfer(report) as tops">
+                  <svg *ngIf="tops.length > 0" [attr.viewBox]="'0 0 620 ' + (30 + tops.length * 30)" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                    <text *ngFor="let t of tops" [attr.x]="4" [attr.y]="t.y + 11" font-size="10">
+                      <tspan fill="#334155" font-weight="600">{{ t.name }}</tspan>
+                      <tspan fill="#94a3b8"> · #{{ t.number }}</tspan>
+                    </text>
+                    <rect *ngFor="let t of tops" [attr.x]="t.x" [attr.y]="t.y" [attr.width]="t.w" [attr.height]="t.h" rx="4" fill="#8b5cf6">
+                      <title>{{ t.name }} · gross {{ etb(t.value) }} · net {{ etb(t.net) }}</title>
+                    </rect>
+                    <text *ngFor="let t of tops" [attr.x]="t.x + t.w + 6" [attr.y]="t.y + 12" font-size="10" font-weight="600" fill="#5b21b6">{{ t.display }}</text>
+                  </svg>
+                  <p *ngIf="tops.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No member data for this period.</p>
+                  <div *ngIf="tops.length > 0" class="mt-1 text-xs" style="color:#94a3b8">
+                    Gross movement = source + destination amounts. Tooltips show net effect per member.
+                  </div>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </ng-container>
+      </ng-container>
+      </ng-container>
+    </ng-container>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <div *ngIf="loading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#64748b">Loading transfer report…</p>
+    </div>
+  </div>
+</ng-template>

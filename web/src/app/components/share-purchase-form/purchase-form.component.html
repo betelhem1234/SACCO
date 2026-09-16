@@ -9,6 +9,23 @@
     </div>
   </div>
 
+  <div *ngIf="settingsBlocked" class="mb-4 rounded-xl p-4 border flex items-start gap-3" style="background:#fef2f2;border-color:#fecaca;color:#991b1b">
+    <mat-icon style="font-size:18px;width:18px;height:18px;margin-top:2px">warning_amber</mat-icon>
+    <div>
+      <p class="font-semibold text-sm">Share settings not configured</p>
+      <p class="text-xs mt-1">Share purchases cannot be added until these are set in Settings &gt; Share Settings:
+        <strong>{{ missingSettingsText }}</strong>.</p>
+    </div>
+  </div>
+
+  <div *ngIf="data?.purchase?.status === 'PENDING'" class="mb-4 rounded-xl p-4 border flex items-start gap-3" style="background:#fefce8;border-color:#fde68a;color:#854d0e">
+    <mat-icon style="font-size:18px;width:18px;height:18px;margin-top:2px">schedule</mat-icon>
+    <div>
+      <p class="font-semibold text-sm">Pending approval</p>
+      <p class="text-xs mt-1">This purchase is waiting for approval. Editing it keeps the record pending and does not post to the ledger.</p>
+    </div>
+  </div>
+
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
     <mat-form-field appearance="outline" class="w-full">
       <mat-label>Member</mat-label>
@@ -24,6 +41,17 @@
       <input matInput type="number" formControlName="totalAmount" required placeholder="0.00" />
     </mat-form-field>
 
+    <div *ngIf="subscriptionTotalForMember > 0" class="flex items-center justify-between px-1 text-xs">
+      <span style="color:#64748b">Member subscription</span>
+      <span class="font-semibold" [style.color]="subscriptionRemaining <= 0 ? '#dc2626' : '#065f46'">{{ subscriptionRemaining | number:'1.2-2' }} remaining</span>
+    </div>
+    <div *ngIf="noSubscriptionForMember" class="px-1 text-xs font-semibold" style="color:#dc2626">
+      Please add a subscription before adding a purchase for this member.
+    </div>
+    <div *ngIf="exceedsSubscription" class="px-1 text-xs font-semibold" style="color:#dc2626">
+      This purchase exceeds the member's remaining subscription amount of {{ subscriptionRemaining | number:'1.2-2' }}.
+    </div>
+
     <mat-form-field appearance="outline" class="w-full">
       <mat-label>Share Units</mat-label>
       <input matInput type="number" formControlName="units" readonly />
@@ -33,6 +61,14 @@
     <div class="flex items-center gap-2 text-sm px-1" style="color:#64748b">
       <mat-icon style="font-size:16px;width:16px;height:16px">info</mat-icon>
       <span>Unit price: {{ shareUnitPrice | number:'1.2-2' }} &middot; Min: {{ minUnits }} &middot; Max: {{ maxUnits }}</span>
+    </div>
+
+    <div *ngIf="authorizedCapital > 0" class="flex items-center justify-between px-1 text-xs">
+      <span style="color:#64748b">Authorized capital</span>
+      <span class="font-semibold" [style.color]="authorizedRemaining <= 0 ? '#dc2626' : '#065f46'">{{ authorizedRemaining | number:'1.2-2' }} available</span>
+    </div>
+    <div *ngIf="exceedsAuthorized" class="px-1 text-xs font-semibold" style="color:#dc2626">
+      This purchase would exceed the authorized share capital of {{ authorizedCapital | number:'1.2-2' }}.
     </div>
 
     <mat-form-field appearance="outline" class="w-full">
@@ -72,7 +108,7 @@
 
     <div class="flex justify-end gap-3 pt-2">
       <button type="button" mat-stroked-button (click)="dialogRef.close()">Cancel</button>
-      <button type="submit" mat-raised-button color="primary" [disabled]="form.invalid"
+      <button type="submit" mat-raised-button color="primary" [disabled]="form.invalid || exceedsAuthorized || settingsBlocked || noSubscriptionForMember || exceedsSubscription"
               style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669));color:white">
         {{ isEdit ? 'Update' : 'Save' }}
       </button>

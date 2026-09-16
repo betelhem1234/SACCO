@@ -1,3 +1,5 @@
+export type ShareStatus = 'PENDING' | 'POSTED' | 'REJECTED';
+
 export interface ShareSubscription {
   id?: string;
   memberId: string;
@@ -6,6 +8,9 @@ export interface ShareSubscription {
   subscriptionDate: number;
   remark?: string;
   createdAt?: number;
+  status?: ShareStatus;
+  approvedBy?: string;
+  approvedAt?: number;
 }
 
 export interface SharePurchase {
@@ -20,6 +25,9 @@ export interface SharePurchase {
   remark?: string;
   transferId?: string;
   createdAt?: number;
+  status?: ShareStatus;
+  approvedBy?: string;
+  approvedAt?: number;
 }
 
 export interface ShareTransfer {

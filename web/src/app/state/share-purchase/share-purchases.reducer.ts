@@ -4,7 +4,10 @@ import {
     loadSharePurchases, loadSharePurchasesSuccess, loadSharePurchasesFailure,
     addSharePurchase, addSharePurchaseSuccess, addSharePurchaseFailure,
     updateSharePurchase, updateSharePurchaseSuccess, updateSharePurchaseFailure,
-    deleteSharePurchase, deleteSharePurchaseSuccess, deleteSharePurchaseFailure
+    deleteSharePurchase, deleteSharePurchaseSuccess, deleteSharePurchaseFailure,
+    approveSharePurchase, approveSharePurchaseSuccess, approveSharePurchaseFailure,
+    rejectSharePurchase, rejectSharePurchaseSuccess, rejectSharePurchaseFailure,
+    reverseSharePurchase, reverseSharePurchaseSuccess, reverseSharePurchaseFailure
 } from './share-purchases.actions';
 
 export interface SharePurchaseState {
@@ -47,5 +50,29 @@ export const sharePurchaseReducer = createReducer(
         sharePurchases: state.sharePurchases.filter(p => p.id !== id),
         status: 'success' as const
     })),
-    on(deleteSharePurchaseFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
+    on(deleteSharePurchaseFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(approveSharePurchase, (state) => ({ ...state, status: 'loading' as const })),
+    on(approveSharePurchaseSuccess, (state, { sharePurchase }) => ({
+        ...state,
+        sharePurchases: state.sharePurchases.map(p => p.id === sharePurchase.id ? { ...sharePurchase, status: 'POSTED' as const } : p),
+        status: 'success' as const
+    })),
+    on(approveSharePurchaseFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(rejectSharePurchase, (state) => ({ ...state, status: 'loading' as const })),
+    on(rejectSharePurchaseSuccess, (state, { sharePurchase }) => ({
+        ...state,
+        sharePurchases: state.sharePurchases.map(p => p.id === sharePurchase.id ? { ...sharePurchase, status: 'REJECTED' as const } : p),
+        status: 'success' as const
+    })),
+    on(rejectSharePurchaseFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(reverseSharePurchase, (state) => ({ ...state, status: 'loading' as const })),
+    on(reverseSharePurchaseSuccess, (state, { sharePurchase }) => ({
+        ...state,
+        sharePurchases: state.sharePurchases.map(p => p.id === sharePurchase.id ? { ...sharePurchase, status: 'PENDING' as const } : p),
+        status: 'success' as const
+    })),
+    on(reverseSharePurchaseFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
 );

@@ -7,25 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { SavingTypeAmountHistory } from '@sacco/shared-models';
 import { ApiService } from '../../services/api.service';
-
-function etb(value: number | null | undefined): string {
-    if (value == null || isNaN(value)) return 'ETB 0.00';
-    const abs = Math.abs(value);
-    const formatted = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'ETB',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(abs);
-    return value < 0 ? `(${formatted})` : formatted;
-}
-
-function fmtDate(epoch: number | null | undefined): string {
-    if (epoch == null) return '—';
-    const d = new Date(epoch);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
-}
+import { etb, fmtDate } from '../../utils/finance-format';
 
 @Component({
     selector: 'app-saving-type-history-dialog',

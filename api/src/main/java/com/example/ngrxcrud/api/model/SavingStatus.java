@@ -10,8 +10,10 @@ package com.example.ngrxcrud.api.model;
  *        │ (approval enabled)
  *        ▼
  *     PENDING ──approve──▶ POSTED
- *        │
+ *        │                    │
  *        └────reject──────▶ REJECTED
+ *
+ *   POSTED ──reverse──▶ PENDING (un-posts from ledger, back to review)
  * </pre>
  *
  * Only POSTED records are posted to the ledger. PENDING and REJECTED records
@@ -36,6 +38,10 @@ public enum SavingStatus {
 
     public boolean canReject() {
         return this == PENDING;
+    }
+
+    public boolean canReverse() {
+        return this == POSTED;
     }
 
     public boolean canEdit() {

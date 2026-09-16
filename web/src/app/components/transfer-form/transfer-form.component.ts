@@ -11,12 +11,13 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { Transfer, Member, SavingType } from '@sacco/shared-models';
+import { Transfer, Member, SavingType, Account, AccountCategory } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
 import { addTransfer, updateTransfer } from '../../state/saving-transfer/transfers.actions';
 import { selectAllMembers } from '../../state/members/members.selectors';
-import { selectAllSavingTypes } from '../../state/lookups/lookups.selectors';
+import { selectAllSavingTypes, selectAllAccounts } from '../../state/lookups/lookups.selectors';
 import { loadAccounts, loadSavingTypes } from '../../state/lookups/lookups.actions';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-transfer-form',
@@ -39,10 +40,12 @@ export class TransferFormComponent implements OnInit {
   editMode = false;
   members$!: Observable<Member[]>;
   savingTypes$!: Observable<SavingType[]>;
+  bankAccounts$!: Observable<Account[]>;
 
   constructor(
     private store: Store<AppState>,
     private fb: FormBuilder,
+    private settingsService: SettingsService,
     private dialogRef: MatDialogRef<TransferFormComponent>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data: { transfer?: Transfer; memberId?: string } | undefined
   ) {}
@@ -53,6 +56,13 @@ export class TransferFormComponent implements OnInit {
 
     this.members$ = this.store.select(selectAllMembers);
     this.savingTypes$ = this.store.select(selectAllSavingTypes);
+    this.bankAccounts$ = this.store.select(selectAllAccounts).pipe(
+      map(accounts => (accounts ?? []).filter(a =>
+        (a.accountCategory === AccountCategory.BANK_ACCOUNT || a.accountCategory === AccountCategory.CASH_ACCOUNT)
+        && a.isActive !== false))
+    );
+
+    this.settingsService.load();
 
     const t = this.data?.transfer;
     this.editMode = !!(t?.id);
@@ -70,13 +80,54 @@ export class TransferFormComponent implements OnInit {
       ftp: [t?.ftp ?? '', Validators.required],
       date: [dateStr, Validators.required],
       remark: [t?.remark ?? ''],
+      feeSource: [t?.feeSource && t.feeSource !== 'NONE' ? t.feeSource : ''],
+      bankId: [t?.bankId ?? ''],
     });
+  }
+
+  get requiresServiceFee(): boolean {
+    return this.settingsService.get('transfer_requires_service_fee') === 'true';
+  }
+
+  get feeFlat(): number {
+    return Number(this.settingsService.get('transfer_service_fee_flat') || 0);
+  }
+
+  get feePct(): number {
+    return Number(this.settingsService.get('transfer_service_fee_percentage') || 0);
+  }
+
+  get feePayable(): boolean {
+    return this.requiresServiceFee
+      && (this.feeFlat > 0 || this.feePct > 0)
+      && !!this.settingsService.get('transfer_service_fee_account_id');
+  }
+
+  computedFee(): number {
+    if (!this.feePayable) return 0;
+    const amount = Number(this.form?.get('amount')?.value) || 0;
+    return Math.round((this.feeFlat + amount * this.feePct / 100) * 100) / 100;
   }
 
   submit() {
     if (this.form.invalid) return;
     const v = this.form.value;
     const date = new Date(v.date).getTime();
+
+    let feeSource = 'NONE';
+    let bankId = '';
+    if (this.feePayable) {
+      feeSource = v.feeSource || '';
+      if (feeSource !== 'SAVING' && feeSource !== 'BANK') {
+        window.alert('Choose where the transfer service fee is paid from (saving or bank).');
+        return;
+      }
+      if (feeSource === 'BANK' && !v.bankId) {
+        window.alert('Select the bank account used to pay the service fee.');
+        return;
+      }
+      bankId = feeSource === 'BANK' ? v.bankId : '';
+    }
 
     if (this.editMode && this.data?.transfer?.id) {
       const transfer: Transfer = {
@@ -89,6 +140,8 @@ export class TransferFormComponent implements OnInit {
         ftp: v.ftp,
         date,
         remark: v.remark || undefined,
+        feeSource: feeSource as 'NONE' | 'SAVING' | 'BANK',
+        bankId: bankId || undefined,
         createdAt: this.data.transfer.createdAt,
       };
       this.store.dispatch(updateTransfer({ transfer }));
@@ -102,6 +155,8 @@ export class TransferFormComponent implements OnInit {
         ftp: v.ftp,
         date,
         remark: v.remark || undefined,
+        feeSource: feeSource as 'NONE' | 'SAVING' | 'BANK',
+        bankId: bankId || undefined,
         createdAt: Date.now(),
       };
       this.store.dispatch(addTransfer({ transfer }));

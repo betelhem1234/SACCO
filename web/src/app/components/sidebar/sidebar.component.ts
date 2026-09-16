@@ -20,9 +20,39 @@ export class SidebarComponent {
   user$ = this.store.select(selectUser);
 
   financeOpen = false;
+  savingOpen = false;
+  sharePurchaseOpen = false;
+  memberOpen = false;
+  withdrawalOpen = false;
+  transferOpen = false;
+  expenseOpen = false;
 
   toggleFinance(): void {
     this.financeOpen = !this.financeOpen;
+  }
+
+  toggleSaving(): void {
+    this.savingOpen = !this.savingOpen;
+  }
+
+  toggleSharePurchase(): void {
+    this.sharePurchaseOpen = !this.sharePurchaseOpen;
+  }
+
+  toggleMember(): void {
+    this.memberOpen = !this.memberOpen;
+  }
+
+  toggleWithdrawal(): void {
+    this.withdrawalOpen = !this.withdrawalOpen;
+  }
+
+  toggleTransfer(): void {
+    this.transferOpen = !this.transferOpen;
+  }
+
+  toggleExpense(): void {
+    this.expenseOpen = !this.expenseOpen;
   }
 
   isAdmin(user: any): boolean {

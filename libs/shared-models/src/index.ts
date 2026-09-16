@@ -8,3 +8,4 @@ export * from './lib/share.model';
 export * from './lib/transfer.model';
 export * from './lib/finance.model';
 export * from './lib/account-classification.model';
+export * from './lib/assets-expense.model';

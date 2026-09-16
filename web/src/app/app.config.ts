@@ -3,9 +3,10 @@ import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@a
 import { Routes } from '@angular/router';
 import { provideRouter } from '@angular/router';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatNativeDateModule } from '@angular/material/core';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { LONG_DATE_FORMATS } from './utils/date-formats';
 import { provideStore } from '@ngrx/store';
 import { authReducer } from './state/auth/auth.reducer';
 import { memberReducer } from './state/members/members.reducer';
@@ -58,6 +59,7 @@ export const appConfig: ApplicationConfig = {
       SharePurchasesEffects, LookupsEffects, LoansEffects, FinanceEffects
     ]),
     provideAnimationsAsync(),
-    importProvidersFrom(MatSnackBarModule, MatNativeDateModule)
+    provideNativeDateAdapter(LONG_DATE_FORMATS),
+    importProvidersFrom(MatSnackBarModule)
   ]
 };

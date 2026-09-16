@@ -21,6 +21,7 @@ import java.util.UUID;
 public class WithdrawalService {
 
     public static final String WITHDRAWAL_REQUIRES_APPROVAL_KEY = "withdrawal_requires_approval";
+    public static final String WITHDRAWAL_REQUIRES_DISBURSEMENT_KEY = "withdrawal_requires_disbursement";
     public static final String WITHDRAWAL_LIMIT_KEY = "withdrawal_limit";
     public static final String WITHDRAWAL_INTERVAL_DAYS_KEY = "withdrawal_interval_days";
 
@@ -41,6 +42,17 @@ public class WithdrawalService {
      */
     public boolean requiresApproval() {
         return settingRepository.findByKey(WITHDRAWAL_REQUIRES_APPROVAL_KEY)
+                .map(s -> Boolean.parseBoolean(s.getValue()))
+                .orElse(false);
+    }
+
+    /**
+     * Reads the global "requires disbursement" setting. When enabled, approved
+     * withdrawals enter the APPROVED state and only post to the ledger (affect
+     * finance) once disbursed.
+     */
+    public boolean requiresDisbursement() {
+        return settingRepository.findByKey(WITHDRAWAL_REQUIRES_DISBURSEMENT_KEY)
                 .map(s -> Boolean.parseBoolean(s.getValue()))
                 .orElse(false);
     }
@@ -109,8 +121,12 @@ public class WithdrawalService {
     }
 
     /**
-     * Creates a withdrawal. If approval is enabled the withdrawal starts PENDING
-     * (no ledger posting); otherwise it is POSTED immediately.
+     * Creates a withdrawal. Status depends on settings:
+     * <ul>
+     *   <li>approval on      → PENDING (no ledger)</li>
+     *   <li>approval off + disbursement on → APPROVED (no ledger yet)</li>
+     *   <li>approval off + disbursement off → POSTED immediately (ledger)</li>
+     * </ul>
      */
     @Transactional
     public Withdrawal createWithdrawal(Withdrawal withdrawal) {
@@ -118,17 +134,25 @@ public class WithdrawalService {
         if (withdrawal.getCreatedAt() == null) {
             withdrawal.setCreatedAt(System.currentTimeMillis());
         }
-        withdrawal.setStatus(requiresApproval() ? WithdrawalStatus.PENDING : WithdrawalStatus.POSTED);
+        if (requiresApproval()) {
+            withdrawal.setStatus(WithdrawalStatus.PENDING);
+        } else if (requiresDisbursement()) {
+            withdrawal.setStatus(WithdrawalStatus.APPROVED);
+        } else {
+            withdrawal.setStatus(WithdrawalStatus.POSTED);
+        }
         Withdrawal saved = withdrawalRepository.save(withdrawal);
         if (WithdrawalStatus.resolve(saved.getStatus()).postsToLedger()) {
-            postToLedger(saved);
+            postToLedger(saved, saved.getDate());
         }
         return saved;
     }
 
     /**
-     * Approves a PENDING withdrawal and posts it to the ledger.
-     * PENDING → POSTED
+     * Approves a PENDING withdrawal. When disbursement is enabled the withdrawal
+     * moves to APPROVED (ledger impact happens at disbursement); otherwise it is
+     * posted to the ledger immediately.
+     * PENDING → APPROVED | POSTED
      */
     @Transactional
     public Withdrawal approveWithdrawal(UUID id, UUID approvedBy) {
@@ -138,11 +162,38 @@ public class WithdrawalService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Only PENDING withdrawals can be approved");
         }
-        withdrawal.setStatus(WithdrawalStatus.POSTED);
+        withdrawal.setStatus(requiresDisbursement() ? WithdrawalStatus.APPROVED : WithdrawalStatus.POSTED);
         withdrawal.setApprovedBy(approvedBy);
         withdrawal.setApprovedAt(System.currentTimeMillis());
         Withdrawal saved = withdrawalRepository.save(withdrawal);
-        postToLedger(saved);
+        if (requiresDisbursement()) {
+            return saved;
+        }
+        postToLedger(saved, saved.getDate());
+        return saved;
+    }
+
+    /**
+     * Disburses an APPROVED withdrawal, posting it to the ledger. This is the
+     * point where the withdrawal affects finance (debit saving account, credit
+     * bank account, and negative saving entry).
+     * APPROVED → DISBURSED
+     */
+    @Transactional
+    public Withdrawal disburseWithdrawal(UUID id, UUID disbursedBy, String referenceNo) {
+        Withdrawal withdrawal = getWithdrawal(id);
+        WithdrawalStatus status = WithdrawalStatus.resolve(withdrawal.getStatus());
+        if (!status.canDisburse()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only APPROVED withdrawals can be disbursed");
+        }
+        long now = System.currentTimeMillis();
+        withdrawal.setStatus(WithdrawalStatus.DISBURSED);
+        withdrawal.setDisbursedBy(disbursedBy);
+        withdrawal.setDisbursedAt(now);
+        withdrawal.setDisbursedReference(referenceNo);
+        Withdrawal saved = withdrawalRepository.save(withdrawal);
+        postToLedger(saved, now);
         return saved;
     }
 
@@ -191,10 +242,11 @@ public class WithdrawalService {
         existing.setStatus(effective);
         Withdrawal saved = withdrawalRepository.save(existing);
 
-        // PENDING/REJECTED records were never posted; only post when leaving to POSTED.
+        // PENDING/REJECTED records were never posted; only post when leaving to a
+        // ledger status (POSTED/DISBURSED).
         if (effective.postsToLedger() && !status.postsToLedger()) {
-            recordNegativeSaving(saved);
-            postToLedger(saved);
+            recordNegativeSaving(saved, saved.getDate());
+            postToLedger(saved, saved.getDate());
         }
         return saved;
     }
@@ -220,7 +272,7 @@ public class WithdrawalService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Withdrawal not found"));
     }
 
-    private void postToLedger(Withdrawal withdrawal) {
+    private void postToLedger(Withdrawal withdrawal, Long ledgerDate) {
         SavingType type = savingTypeRepository.findById(withdrawal.getSavingTypeId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.BAD_REQUEST, "Saving type not found"));
@@ -230,7 +282,7 @@ public class WithdrawalService {
                 type.getAccountId(),
                 withdrawal.getId(),
                 withdrawal.getFtp(),
-                withdrawal.getDate(),
+                ledgerDate,
                 "Withdrawal",
                 withdrawal.getAmount());
 
@@ -239,19 +291,19 @@ public class WithdrawalService {
                 withdrawal.getBankId(),
                 withdrawal.getId(),
                 withdrawal.getFtp(),
-                withdrawal.getDate(),
+                ledgerDate,
                 "Withdrawal",
                 withdrawal.getAmount());
 
         // Record negative saving entry to reduce member's balance
-        recordNegativeSaving(withdrawal);
+        recordNegativeSaving(withdrawal, ledgerDate);
     }
 
-    private void recordNegativeSaving(Withdrawal withdrawal) {
+    private void recordNegativeSaving(Withdrawal withdrawal, Long ledgerDate) {
         Saving negativeSaving = new Saving();
         negativeSaving.setMemberId(withdrawal.getMemberId());
         negativeSaving.setSavingAmount(-withdrawal.getAmount());
-        negativeSaving.setSavingDate(withdrawal.getDate());
+        negativeSaving.setSavingDate(ledgerDate != null ? ledgerDate : withdrawal.getDate());
         negativeSaving.setFtp(withdrawal.getFtp());
         negativeSaving.setSavingType(withdrawal.getSavingTypeId());
         negativeSaving.setAccountId(withdrawal.getBankId());

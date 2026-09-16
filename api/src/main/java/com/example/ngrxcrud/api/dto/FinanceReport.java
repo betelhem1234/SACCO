@@ -379,4 +379,304 @@ public final class FinanceReport {
         public List<AccountPeriodRow> incomeAccounts = new ArrayList<>();
         public List<AccountPeriodRow> expenseAccounts = new ArrayList<>();
     }
+
+    // ─── Savings Report ────────────────────────────────────────────────────────
+    //
+    // Operator-facing savings report that reconciles the savings records with the
+    // finance (journal) system. `byMember` groups collections per member + saving
+    // type, `transactions` is the flat register, and `types` reconciles each
+    // saving type's POSTED amount against the credit entries posted to that
+    // type's ledger account (difference of ~0 proves they match the finance system).
+
+    /** Per saving type, POSTED collections vs ledger credits. */
+    public static class SavingsTypeBreakdown implements Serializable {
+        public UUID savingTypeId;
+        public String name;
+        public boolean mandatory;
+        public long memberCount;
+        public long count;
+        public double totalAmount;     // all non-rejected collections in window
+        public double postedAmount;    // POSTED collections in window
+        public double ledgerCredits;   // CREDIT journal entries for those POSTED savings
+        public double difference;      // postedAmount - ledgerCredits
+    }
+
+    /** One row per (member, saving type). */
+    public static class SavingsMemberRow implements Serializable {
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public UUID savingTypeId;
+        public String savingTypeName;
+        public boolean mandatory;
+        public long count;
+        public double amount;          // all non-rejected collections in window
+        public double postedAmount;    // POSTED collections in window
+    }
+
+    /** One row per saving transaction (the flat register). */
+    public static class SavingsTransactionRow implements Serializable {
+        public UUID id;
+        public Long date;
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public UUID savingTypeId;
+        public String savingTypeName;
+        public boolean mandatory;
+        public String ftp;
+        public String accountName;     // bank/cash account debited
+        public double amount;
+        public String status;          // POSTED | PENDING
+    }
+
+    public static class SavingsReport extends Base {
+        public List<SavingsMemberRow> byMember = new ArrayList<>();
+        public List<SavingsTransactionRow> transactions = new ArrayList<>();
+        public List<SavingsTypeBreakdown> types = new ArrayList<>();
+        public long transactionCount;
+        public double grandTotal;      // sum of POSTED savings in window
+        public double pendingTotal;    // sum of PENDING savings in window
+        public double ledgerTotal;     // CREDIT journal total for those POSTED savings
+        public double difference;      // grandTotal - ledgerTotal
+    }
+
+    // ─── Mandatory Tracker Report ─────────────────────────────────────────────
+    //
+    // Built from the member_saving_period rows (the mandatory tracker). The member
+    // matrix shows one row per member with a cell per month of the selected year;
+    // `months` rolls the same data up into per-month totals.
+
+    /** One month cell inside a member's tracker matrix row. */
+    public static class TrackerMonthCell implements Serializable {
+        public int month;              // 1..12
+        public int yearMonth;          // YYYYMM
+        public double required;
+        public double paid;
+        public double remaining;
+        public String status;          // PAID | PARTIAL | UNPAID | "" (no row)
+    }
+
+    /** One member's row across all 12 months of the year. */
+    public static class TrackerMemberRow implements Serializable {
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public List<TrackerMonthCell> months = new ArrayList<>();
+        public double requiredTotal;
+        public double paidTotal;
+        public double arrearsTotal;
+        public int fullyPaidMonths;
+        public int partialMonths;
+        public int unpaidMonths;
+        public String status;          // overall PAID | PARTIAL | UNPAID
+    }
+
+    /** Per-month roll-up of every member's obligation for that month. */
+    public static class TrackerMonthTotal implements Serializable {
+        public int yearMonth;
+        public String label;           // e.g. "Jan 2026"
+        public long memberCount;
+        public long paidCount;
+        public long partialCount;
+        public long unpaidCount;
+        public double required;
+        public double paid;
+        public double remaining;
+    }
+
+    public static class MandatoryTrackerReport implements Serializable {
+        public int year;
+        public String savingTypeName;
+        public List<TrackerMemberRow> members = new ArrayList<>();
+        public List<TrackerMonthTotal> months = new ArrayList<>();
+        public long totalMembers;
+        public double totalRequired;
+        public double totalPaid;
+        public double totalArrears;
+    }
+
+    // ─── Share Purchase Report ────────────────────────────────────────────────
+    //
+    // Reconciles share purchase records against the finance (journal) system.
+    // For each purchase the ledger has a DEBIT to the bank/cash account equal to
+    // the total amount received, and CREDITS split between the share capital
+    // account (net of service fee) and the registration fee account. A purchase
+    // is `reconciled` when its ledger debit equals the recorded total amount.
+
+    /** One row per member's share subscriptions + purchases in the window. */
+    public static class SharePurchaseMemberRow implements Serializable {
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public long count;
+        public double units;
+        public double amount;
+        public double purchaseAmount; // share purchase amount net of service fee
+        public double ledgerDebit;
+        public double difference;
+        public long subscriptionCount;
+        public double subscribedUnits;
+        public double subscribedAmount;
+        public double outstandingUnits;
+        public double outstandingAmount;
+    }
+
+    /** One share purchase transaction in the flat register. */
+    public static class SharePurchaseTransactionRow implements Serializable {
+        public UUID id;
+        public Long date;
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public double units;
+        public double amount;
+        public double serviceFee;
+        public double shareAmount;
+        public String bankName;
+        public String transactionReference;
+        public boolean reconciled;
+    }
+
+    public static class SharePurchaseReport extends Base {
+        public List<SharePurchaseMemberRow> byMember = new ArrayList<>();
+        public List<SharePurchaseTransactionRow> transactions = new ArrayList<>();
+        public long transactionCount;
+        public double grandTotal;        // sum of purchase totals in window
+        public double unitsTotal;
+        public double serviceFeeTotal;
+        public double shareCapitalTotal; // grandTotal - serviceFeeTotal
+        public double ledgerDebitTotal;  // DEBIT journal entries for those purchases
+        public double ledgerCreditTotal; // CREDIT journal entries (share + fee)
+        public double difference;        // grandTotal - ledgerDebitTotal
+        public long reconciledCount;
+        public long subscriptionCount;
+        public double subscribedUnitsTotal;
+        public double subscribedAmountTotal;
+        public double outstandingUnitsTotal;
+        public double outstandingAmountTotal;
+        // Capital position vs authorized capital (all-time figures, not window-filtered)
+        public double authorizedCapital;         // from setting `authorized_capital`
+        public double subscribedCapitalTotal;    // all-time issued subscriptions
+        public double purchasedCapitalTotal;     // all-time share capital (amount - service fee)
+        public double outstandingCapitalTotal;   // all-time subscribed - purchased
+    }
+
+    // ─── Withdrawal Report ───────────────────────────────────────────────────
+    //
+    // Lists member share withdrawals grouped by member and saving type, backed
+    // by a flat register and per-saving-type roll-up. The report reconciles
+    // POSTED withdrawals against the DEBIT journal entry recorded for the saving
+    // account when the withdrawal is approved.
+
+    /** Per saving type, POSTED withdrawals vs ledger debits. */
+    public static class WithdrawalTypeBreakdown implements Serializable {
+        public UUID savingTypeId;
+        public String name;
+        public boolean mandatory;
+        public long memberCount;
+        public long count;
+        public double totalAmount;     // all non-rejected withdrawals in window
+        public double postedAmount;    // POSTED withdrawals in window
+        public double ledgerDebits;    // DEBIT journal entries for those POSTED withdrawals
+        public double difference;      // postedAmount - ledgerDebits
+    }
+
+    /** One row per (member, saving type). */
+    public static class WithdrawalMemberRow implements Serializable {
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public UUID savingTypeId;
+        public String savingTypeName;
+        public boolean mandatory;
+        public long count;
+        public double amount;          // all non-rejected withdrawals in window
+        public double postedAmount;    // POSTED withdrawals in window
+    }
+
+    /** One row per withdrawal (the flat register). */
+    public static class WithdrawalTransactionRow implements Serializable {
+        public UUID id;
+        public Long date;
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public UUID savingTypeId;
+        public String savingTypeName;
+        public boolean mandatory;
+        public String ftp;
+        public String bankName;        // bank/cash account credited
+        public double amount;
+        public String status;          // POSTED | PENDING | REJECTED
+    }
+
+    public static class WithdrawalReport extends Base {
+        public List<WithdrawalMemberRow> byMember = new ArrayList<>();
+        public List<WithdrawalTransactionRow> transactions = new ArrayList<>();
+        public List<WithdrawalTypeBreakdown> types = new ArrayList<>();
+        public long transactionCount;
+        public double grandTotal;      // sum of POSTED withdrawals in window
+        public double pendingTotal;    // sum of PENDING withdrawals in window
+        public double ledgerTotal;     // DEBIT journal total for those POSTED withdrawals
+        public double difference;      // grandTotal - ledgerTotal
+    }
+
+    // ─── Transfer Report ──────────────────────────────────────────────────────
+    //
+    // Lists both SAVING transfers (between saving accounts) and SHARE transfers
+    // (between share holdings). SAVING transfers are immediate (no PENDING/
+    // REJECTED status) and reconciled against DEBIT (source) / CREDIT
+    // (destination) journal entries keyed by the transfer id. SHARE transfers
+    // carry units and are reconciled against the share-purchase records they
+    // generate (a negative "Transfer out" for the source member and a positive
+    // "Transfer in" for the destination member, keyed by the share transfer id).
+
+    /** One row per transfer (the flat register). */
+    public static class TransferTransactionRow implements Serializable {
+        public UUID id;
+        public Long date;
+        public String type;          // "SAVING" | "SHARE"
+        public Double units;         // share quantity for SHARE transfers
+        public UUID sourceMemberId;
+        public String sourceMemberName;
+        public String sourceMemberNumber;
+        public String sourceSavingTypeName;   // null for SHARE transfers
+        public UUID destinationMemberId;
+        public String destinationMemberName;
+        public String destinationMemberNumber;
+        public String destinationSavingTypeName; // null for SHARE transfers
+        public double amount;
+        public String ftp;
+        public double sourceLedger;      // recorded outflow for this transfer (saving debit / share transfer-out)
+        public double destinationLedger; // recorded inflow for this transfer (saving credit / share transfer-in)
+        public boolean reconciled;   // source side == amount
+    }
+
+    /** One row per member: source vs destination totals. */
+    public static class TransferMemberRow implements Serializable {
+        public UUID memberId;
+        public String memberName;
+        public String memberNumber;
+        public long sourceCount;
+        public double sourceAmount;
+        public long destinationCount;
+        public double destinationAmount;
+        public double netAmount;      // destination − source
+    }
+
+    public static class TransferReport extends Base {
+        public List<TransferMemberRow> byMember = new ArrayList<>();
+        public List<TransferTransactionRow> transactions = new ArrayList<>();
+        public long transactionCount;
+        public long savingCount;         // SAVING transfers in window
+        public long shareCount;          // SHARE transfers in window
+        public double savingTotal;       // sum of SAVING transfer amounts in window
+        public double shareTotal;        // sum of SHARE transfer amounts in window
+        public double shareUnitsTotal;   // share units transferred in window
+        public double grandTotal;            // sum of amounts in window
+        public double sourceLedgerTotal;     // saving DEBIT entries + share transfer-out purchases
+        public double destinationLedgerTotal;// saving CREDIT entries + share transfer-in purchases
+        public double difference;            // grandTotal − sourceLedgerTotal
+    }
 }

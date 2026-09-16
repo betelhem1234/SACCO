@@ -12,6 +12,11 @@ import {
   PeriodReport,
   MonthlyFinanceReport,
   WeeklyFinanceReport,
+  SavingsReport,
+  MandatoryTrackerReport,
+  SharePurchaseReport,
+  WithdrawalReport,
+  TransferReport,
 } from '@sacco/shared-models';
 
 export interface FinancePeriod {
@@ -128,3 +133,48 @@ export const loadWeeklyReportSuccess = createAction(
   props<{ report: WeeklyFinanceReport }>()
 );
 export const loadWeeklyReportFailure = createAction('[FINANCE] Load Weekly Report Failure', props<{ error: any }>());
+
+// ─── Savings Report ───────────────────────────────────────────────────────────
+
+export const loadSavingsReport = createAction('[FINANCE] Load Savings Report', props<FinancePeriod>());
+export const loadSavingsReportSuccess = createAction(
+  '[FINANCE] Load Savings Report Success',
+  props<{ report: SavingsReport }>()
+);
+export const loadSavingsReportFailure = createAction('[FINANCE] Load Savings Report Failure', props<{ error: any }>());
+
+// ─── Mandatory Tracker Report ─────────────────────────────────────────────────
+
+export const loadMandatoryTrackerReport = createAction('[FINANCE] Load Mandatory Tracker Report', props<{ params: FinanceReportParams }>());
+export const loadMandatoryTrackerReportSuccess = createAction(
+  '[FINANCE] Load Mandatory Tracker Report Success',
+  props<{ report: MandatoryTrackerReport }>()
+);
+export const loadMandatoryTrackerReportFailure = createAction('[FINANCE] Load Mandatory Tracker Report Failure', props<{ error: any }>());
+
+// ─── Share Purchase Report ────────────────────────────────────────────────────
+
+export const loadSharePurchaseReport = createAction('[FINANCE] Load Share Purchase Report', props<FinancePeriod>());
+export const loadSharePurchaseReportSuccess = createAction(
+  '[FINANCE] Load Share Purchase Report Success',
+  props<{ report: SharePurchaseReport }>()
+);
+export const loadSharePurchaseReportFailure = createAction('[FINANCE] Load Share Purchase Report Failure', props<{ error: any }>());
+
+// ─── Withdrawal Report ────────────────────────────────────────────────────
+
+export const loadWithdrawalReport = createAction('[FINANCE] Load Withdrawal Report', props<FinancePeriod>());
+export const loadWithdrawalReportSuccess = createAction(
+  '[FINANCE] Load Withdrawal Report Success',
+  props<{ report: WithdrawalReport }>()
+);
+export const loadWithdrawalReportFailure = createAction('[FINANCE] Load Withdrawal Report Failure', props<{ error: any }>());
+
+// ─── Transfer Report ──────────────────────────────────────────────────────
+
+export const loadTransferReport = createAction('[FINANCE] Load Transfer Report', props<FinancePeriod>());
+export const loadTransferReportSuccess = createAction(
+  '[FINANCE] Load Transfer Report Success',
+  props<{ report: TransferReport }>()
+);
+export const loadTransferReportFailure = createAction('[FINANCE] Load Transfer Report Failure', props<{ error: any }>());

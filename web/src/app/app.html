@@ -27,8 +27,8 @@
         </div>
         <div class="flex items-center gap-4" *ngIf="user$ | async as user">
           <div class="text-right hidden sm:block">
-            <p class="text-white text-sm font-semibold leading-none">{{ user.username || 'Admin User' }}</p>
-            <p class="text-blue-300 text-xs mt-0.5">{{ user.roles?.join(', ') || 'System Administrator' }}</p>
+            <p class="text-white text-base font-semibold leading-none">{{ user.username || 'Admin User' }}</p>
+            <p class="text-blue-300 text-sm mt-0.5">{{ user.roles?.join(', ') || 'System Administrator' }}</p>
           </div>
           <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm"
             style="background:linear-gradient(135deg,var(--accent,#10b981),var(--accent-dark,#059669));color:white">

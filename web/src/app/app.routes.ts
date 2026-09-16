@@ -1,12 +1,14 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { MemberListComponent } from './components/member-list/member-list.component';
+import { MemberReportComponent } from './components/member-report/member-report.component';
 import { MemberFormComponent } from './components/member-form/member-form.component';
 import { MemberDetailComponent } from './components/member-detail/member-detail.component';
 import { SavingListComponent } from './components/saving-list/saving-list.component';
 import { AccountListComponent } from './components/account-list/account-list.component';
 import { SavingTypeListComponent } from './components/saving-type-list/saving-type-list.component';
 import { WithdrawalListComponent } from './components/withdrawal-list/withdrawal-list.component';
+import { WithdrawalReportComponent } from './components/finance/withdrawal-report/withdrawal-report.component';
 import { LoanTypeListComponent } from './components/loan-type-list/loan-type-list.component';
 import { LoanRequestListComponent } from './components/loan-request-list/loan-request-list.component';
 import { LoanListComponent } from './components/loan-list/loan-list.component';
@@ -24,6 +26,7 @@ import { UserManagementComponent } from './components/user-management/user-manag
 import { SettingsComponent } from './components/settings/settings.component';
 import { SharePurchaseComponent } from './components/share-purchase/share-purchase.component';
 import { TransferComponent } from './components/transfer/transfer.component';
+import { TransferReportComponent } from './components/finance/transfer-report/transfer-report.component';
 import { FinanceDashboardComponent } from './components/finance/finance-dashboard/finance-dashboard.component';
 import { TrialBalanceComponent } from './components/finance/trial-balance/trial-balance.component';
 import { IncomeStatementComponent } from './components/finance/income-statement/income-statement.component';
@@ -33,6 +36,10 @@ import { GeneralLedgerComponent } from './components/finance/general-ledger/gene
 import { RetainedEarningsComponent } from './components/finance/retained-earnings/retained-earnings.component';
 import { AccountLedgerComponent } from './components/finance/account-ledger/account-ledger.component';
 import { FinanceReportComponent } from './components/finance/finance-report/finance-report.component';
+import { SavingsReportComponent } from './components/finance/savings-report/savings-report.component';
+import { MandatoryTrackerReportComponent } from './components/finance/mandatory-tracker-report/mandatory-tracker-report.component';
+import { SharePurchaseReportComponent } from './components/finance/share-purchase-report/share-purchase-report.component';
+import { AssetsExpenseComponent } from './components/assets-expense/assets-expense.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -45,14 +52,20 @@ export const routes: Routes = [
         canActivate: [AuthGuard]
     },
     { path: 'members', component: MemberListComponent, canActivate: [AuthGuard] },
+    { path: 'members/report', component: MemberReportComponent, canActivate: [AuthGuard] },
     { path: 'members/:id', component: MemberDetailComponent, canActivate: [AuthGuard] },
     { path: 'saving', component: SavingListComponent, canActivate: [AuthGuard] },
+    { path: 'saving/savings-report', component: SavingsReportComponent, canActivate: [AuthGuard] },
+    { path: 'saving/mandatory-tracker-report', component: MandatoryTrackerReportComponent, canActivate: [AuthGuard] },
     { path: 'share-purchase', component: SharePurchaseComponent, canActivate: [AuthGuard] },
+    { path: 'share-purchase/report', component: SharePurchaseReportComponent, canActivate: [AuthGuard] },
     { path: 'accounts', component: AccountListComponent, canActivate: [AuthGuard] },
     { path: 'saving-types', component: SavingTypeListComponent, canActivate: [AuthGuard] },
     { path: 'loan-types', component: LoanTypeListComponent, canActivate: [AuthGuard] },
     { path: 'withdrawal', component: WithdrawalListComponent, canActivate: [AuthGuard] },
+    { path: 'withdrawal/report', component: WithdrawalReportComponent, canActivate: [AuthGuard] },
     { path: 'transfers', component: TransferComponent, canActivate: [AuthGuard] },
+    { path: 'transfers/report', component: TransferReportComponent, canActivate: [AuthGuard] },
     { path: 'regions', component: RegionListComponent, canActivate: [AuthGuard] },
     { path: 'subcities', component: SubcityListComponent, canActivate: [AuthGuard] },
     { path: 'educations', component: EducationListComponent, canActivate: [AuthGuard] },
@@ -60,6 +73,7 @@ export const routes: Routes = [
     { path: 'loans', component: LoanListComponent, canActivate: [AuthGuard] },
     { path: 'loans/requests', component: LoanRequestListComponent, canActivate: [AuthGuard] },
     { path: 'loans/:id', component: LoanDetailComponent, canActivate: [AuthGuard] },
+    { path: 'assets-expense', component: AssetsExpenseComponent, canActivate: [AuthGuard] },
     { path: 'finance', component: FinanceDashboardComponent, canActivate: [AuthGuard] },
     { path: 'finance/trial-balance', component: TrialBalanceComponent, canActivate: [AuthGuard] },
     { path: 'finance/income-statement', component: IncomeStatementComponent, canActivate: [AuthGuard] },

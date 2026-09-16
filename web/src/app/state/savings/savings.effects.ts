@@ -11,7 +11,8 @@ import {
     updateSaving, updateSavingSuccess, updateSavingFailure,
     deleteSaving, deleteSavingSuccess, deleteSavingFailure,
     approveSaving, approveSavingSuccess, approveSavingFailure,
-    rejectSaving, rejectSavingSuccess, rejectSavingFailure
+    rejectSaving, rejectSavingSuccess, rejectSavingFailure,
+    reverseSaving, reverseSavingSuccess, reverseSavingFailure
 } from './savings.actions';
 
 @Injectable({ providedIn: 'root' })
@@ -117,6 +118,24 @@ export class SavingsEffects {
                     catchError(error => {
                         window.alert(httpErrorMessage(error, "Failed to reject saving."));
                         return of(rejectSavingFailure({ error }));
+                    })
+                )
+            )
+        )
+    );
+
+    reverseSaving$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(reverseSaving),
+            mergeMap(action =>
+                this.apiService.reverseSaving(action.id).pipe(
+                    map((saving: Saving) => reverseSavingSuccess({ saving })),
+                    tap(() => {
+                        window.alert("Saving reversed to pending");
+                    }),
+                    catchError(error => {
+                        window.alert(httpErrorMessage(error, "Failed to reverse saving."));
+                        return of(reverseSavingFailure({ error }));
                     })
                 )
             )

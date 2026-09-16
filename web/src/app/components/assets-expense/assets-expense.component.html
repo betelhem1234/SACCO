@@ -1,0 +1,357 @@
+<div class="fin-page">
+  <div class="fin-toolbar" style="justify-content:space-between;margin-bottom:1rem">
+    <div>
+      <h2 style="margin:0;color:#1e3a5f;font-weight:800">Assets &amp; Expenses</h2>
+      <p style="margin:0;color:#64748b;font-size:0.85rem">Equipment, consumables, rent payments &amp; fixed-asset lifecycle</p>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <button mat-stroked-button (click)="refresh()" matTooltip="Reload">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <button mat-flat-button (click)="openRequestDialog()" style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:#fff">
+        <mat-icon>add</mat-icon> New Request
+      </button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;overflow-x:auto;padding-bottom:0.25rem" class="no-print">
+    <button *ngFor="let t of requestTabs" (click)="setTab(t.id)"
+            class="fin-chip" role="tab" [attr.aria-selected]="activeTab === t.id"
+            [style.background]="activeTab === t.id ? '#1e3a5f' : '#fff'"
+            [style.color]="activeTab === t.id ? '#fff' : '#475569'"
+            [style.borderColor]="activeTab === t.id ? '#1e3a5f' : '#e2e8f0'">
+      <mat-icon style="font-size:16px;width:16px;height:16px">{{ t.icon }}</mat-icon>
+      {{ t.label }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="fin-card" style="display:flex;justify-content:center;padding:3rem">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <!-- ================= Overview ================= -->
+  <div *ngIf="activeTab === 'overview'" class="space-y-4">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
+      <div class="fin-card" style="padding:1.25rem">
+        <p style="margin:0;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700">Total Asset Cost</p>
+        <p style="margin:0.25rem 0 0;font-size:1.4rem;font-weight:800;color:#1e3a5f">{{ etb(totalAssetCost()) }}</p>
+      </div>
+      <div class="fin-card" style="padding:1.25rem">
+        <p style="margin:0;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700">Accumulated Depreciation</p>
+        <p style="margin:0.25rem 0 0;font-size:1.4rem;font-weight:800;color:#b45309">{{ etb(accumulatedDepreciation()) }}</p>
+      </div>
+      <div class="fin-card" style="padding:1.25rem">
+        <p style="margin:0;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700">Net Book Value</p>
+        <p style="margin:0.25rem 0 0;font-size:1.4rem;font-weight:800;color:#065f46">{{ etb(netBookValue()) }}</p>
+      </div>
+      <div class="fin-card" style="padding:1.25rem">
+        <p style="margin:0;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:700">Prepaid Rent Exposure</p>
+        <p style="margin:0.25rem 0 0;font-size:1.4rem;font-weight:800;color:#3730a3">{{ etb(prepaidExposure()) }}</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem">
+      <div class="fin-card" style="padding:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:700;color:#334155">Purchase Requests</span>
+          <span class="fin-section-badge" style="background:#eff6ff;color:#1d4ed8">{{ requests.length }}</span>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
+          <div style="text-align:center;flex:1">
+            <p style="margin:0;font-weight:800;color:#b45309">{{ pendingCount('PENDING') }}</p>
+            <p style="margin:0;font-size:0.7rem;color:#64748b">Pending</p>
+          </div>
+          <div style="text-align:center;flex:1">
+            <p style="margin:0;font-weight:800;color:#1d4ed8">{{ pendingCount('APPROVED') }}</p>
+            <p style="margin:0;font-size:0.7rem;color:#64748b">Approved</p>
+          </div>
+          <div style="text-align:center;flex:1">
+            <p style="margin:0;font-weight:800;color:#065f46">{{ pendingCount('PAID') }}</p>
+            <p style="margin:0;font-size:0.7rem;color:#64748b">Paid</p>
+          </div>
+          <div style="text-align:center;flex:1">
+            <p style="margin:0;font-weight:800;color:#991b1b">{{ pendingCount('REJECTED') }}</p>
+            <p style="margin:0;font-size:0.7rem;color:#64748b">Rejected</p>
+          </div>
+        </div>
+      </div>
+      <div class="fin-card" style="padding:1.25rem">
+        <p style="margin:0;font-weight:700;color:#334155">Requests by Category</p>
+        <div style="margin-top:0.75rem" class="space-y-2">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#64748b;font-size:0.85rem">Equipment</span>
+            <span style="font-weight:700;color:#1e3a5f">{{ requestByCategory('EQUIPMENT') }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#64748b;font-size:0.85rem">Consumable</span>
+            <span style="font-weight:700;color:#1e3a5f">{{ requestByCategory('CONSUMABLE') }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#64748b;font-size:0.85rem">Rent</span>
+            <span style="font-weight:700;color:#1e3a5f">{{ requestByCategory('RENT') }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:#64748b;font-size:0.85rem">Other</span>
+            <span style="font-weight:700;color:#1e3a5f">{{ requestByCategory('OTHER') }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="fin-card" style="padding:1.25rem">
+        <p style="margin:0;font-weight:700;color:#334155;margin-bottom:0.75rem">Asset Portfolio</p>
+        <table class="fin-table">
+          <thead>
+            <tr><th>Asset</th><th class="fin-numeric">Cost</th><th class="fin-numeric">NBV</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of assets">
+              <ng-container *ngIf="!isDisposed(a)">
+                <td style="white-space:nowrap">{{ a.name }}</td>
+                <td class="fin-numeric">{{ num(a.cost) }}</td>
+                <td class="fin-numeric">{{ num(a.cost - (a.depreciable !== false ? assetAccumulated(a.id!) : 0)) }}</td>
+              </ng-container>
+            </tr>
+            <tr *ngIf="activeAssets().length === 0">
+              <td colspan="3" style="color:#94a3b8;padding:1rem;text-align:center">No active assets yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Requests ================= -->
+  <div *ngIf="activeTab === 'requests'" class="fin-card" style="overflow:hidden">
+    <div style="padding:1rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0;color:#1e3a5f;font-weight:700">Purchase &amp; Expense Requests</h3>
+      <button mat-stroked-button (click)="openRequestDialog()"><mat-icon>add</mat-icon> New Request</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="fin-table">
+        <thead>
+          <tr>
+            <th>Title</th><th>Category</th><th>Amount</th><th>Requested By</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of requests">
+            <td style="white-space:nowrap">
+              {{ r.title }}
+              <div style="color:#94a3b8;font-size:0.75rem">Requested {{ fmtDate(r.requestedDate) }}</div>
+            </td>
+            <td><span class="fin-section-badge" style="background:#e2e8f0;color:#334155">{{ r.category }}</span></td>
+            <td class="fin-numeric">
+              <ng-container *ngIf="r.category === 'RENT'">
+                {{ etb(r.amountPerPeriod ?? 0) }} / {{ (r.frequency || 'MONTHLY') | titlecase }}
+                <div style="color:#94a3b8;font-size:0.75rem">{{ r.periodsCovered }} periods</div>
+              </ng-container>
+              <ng-container *ngIf="r.category !== 'RENT'">{{ etb(r.amount ?? 0) }}</ng-container>
+            </td>
+            <td>{{ r.requestedBy }}</td>
+            <td>
+              <span class="fin-section-badge" [style]="statusStyles[r.status || 'PENDING']">{{ r.status }}</span>
+            </td>
+            <td style="white-space:nowrap">
+              <button mat-icon-button color="primary" matTooltip="Approve" (click)="approveRequest(r)" [disabled]="r.status !== 'PENDING'">
+                <mat-icon>check_circle</mat-icon>
+              </button>
+              <button mat-icon-button color="accent" matTooltip="Reject" (click)="rejectRequest(r)" [disabled]="r.status !== 'PENDING'">
+                <mat-icon>cancel</mat-icon>
+              </button>
+              <button mat-icon-button [style.color]="'#065f46'" matTooltip="Pay" (click)="payRequest(r)" [disabled]="r.status !== 'APPROVED'">
+                <mat-icon>payments</mat-icon>
+              </button>
+              <button mat-icon-button matTooltip="Edit" (click)="openRequestDialog(r)" [disabled]="!canEditRequest(r)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" matTooltip="Delete" (click)="deleteRequest(r)" [disabled]="!canEditRequest(r)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="requests.length === 0">
+            <td colspan="6" style="color:#94a3b8;padding:1.5rem;text-align:center">No requests yet</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= Assets ================= -->
+  <div *ngIf="activeTab === 'assets'" class="fin-card" style="overflow:hidden">
+    <div style="padding:1rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+      <h3 style="margin:0;color:#1e3a5f;font-weight:700">Fixed Assets</h3>
+      <div style="display:flex;gap:0.5rem">
+        <button mat-stroked-button (click)="runAllDepreciation()" matTooltip="Post monthly depreciation for all active assets">
+          <mat-icon>event_available</mat-icon> Run All Depreciation
+        </button>
+        <button mat-flat-button color="primary" (click)="openAssetDialog()"><mat-icon>add</mat-icon> Register Asset</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="fin-table">
+        <thead>
+          <tr>
+            <th>Asset</th><th>Category</th><th (click)="toggleAssetSort()" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Purchase <span class="material-icons text-[13px]">{{ sortIcon('purchaseDate', 'purchaseDate', assetSortAsc) }}</span></span></th><th class="fin-numeric">Cost</th>
+            <th class="fin-numeric">Accum. Dep'n</th><th class="fin-numeric">Net Book Value</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of sortedAssets()">
+            <td>{{ a.name }}
+              <div *ngIf="a.supplier" style="color:#94a3b8;font-size:0.75rem">{{ a.supplier }}</div>
+            </td>
+            <td><span class="fin-section-badge" style="background:#e0e7ff;color:#3730a3">{{ a.category || '—' }}</span></td>
+            <td style="white-space:nowrap">{{ fmtDate(a.purchaseDate) }}</td>
+            <td class="fin-numeric">{{ etb(a.cost) }}</td>
+            <td class="fin-numeric" style="color:#b45309">{{ etb(assetAccumulated(a.id!)) }}</td>
+            <td class="fin-numeric" style="font-weight:700;color:#065f46">
+              {{ etb(a.depreciable !== false ? (a.cost - assetAccumulated(a.id!)) : a.cost) }}
+            </td>
+            <td>
+              <span class="fin-section-badge" [style]="isDisposed(a) ? 'background:#fee2e2;color:#991b1b' : 'background:#d1fae5;color:#065f46'">
+                {{ a.status }}
+              </span>
+            </td>
+            <td style="white-space:nowrap">
+              <ng-container *ngIf="!isDisposed(a)">
+                <button mat-icon-button matTooltip="Run depreciation" (click)="runDepreciation(a)">
+                  <mat-icon>event_available</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" matTooltip="Dispose" (click)="disposeAsset(a)">
+                  <mat-icon>delete_sweep</mat-icon>
+                </button>
+                <button mat-icon-button matTooltip="Edit" (click)="openAssetDialog(a)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </ng-container>
+            </td>
+          </tr>
+          <tr *ngIf="assets.length === 0">
+            <td colspan="8" style="color:#94a3b8;padding:1.5rem;text-align:center">No assets registered</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= Disposals ================= -->
+  <div *ngIf="activeTab === 'disposals'" class="fin-card" style="overflow:hidden">
+    <div style="padding:1rem;border-bottom:1px solid #e2e8f0">
+      <h3 style="margin:0;color:#1e3a5f;font-weight:700">Asset Disposals</h3>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="fin-table">
+        <thead>
+          <tr>
+            <th>Asset</th><th>Condition</th><th>Disposal Date</th><th class="fin-numeric">Proceeds</th>
+            <th class="fin-numeric">Book Value</th><th class="fin-numeric">Gain / (Loss)</th><th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of disposals">
+            <td>{{ d.assetName }}</td>
+            <td><span class="fin-section-badge" [style]="conditionStyles[d.condition]">{{ d.condition }}</span></td>
+            <td style="white-space:nowrap">{{ fmtDate(d.disposalDate) }}</td>
+            <td class="fin-numeric">{{ etb(d.proceeds) }}</td>
+            <td class="fin-numeric">{{ etb(d.bookValue) }}</td>
+            <td class="fin-numeric" [style]="(d.gainLoss ?? 0) >= 0 ? 'color:#065f46;font-weight:700' : 'color:#991b1b;font-weight:700'">
+              {{ etb(d.gainLoss) }}
+            </td>
+            <td style="color:#64748b;font-size:0.8rem">{{ d.note || '—' }}</td>
+          </tr>
+          <tr *ngIf="disposals.length === 0">
+            <td colspan="7" style="color:#94a3b8;padding:1.5rem;text-align:center">No disposals recorded
+              <span style="display:block;margin-top:0.25rem;color:#94a3b8">Use the Assets tab → Dispose</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= Rentals ================= -->
+  <div *ngIf="activeTab === 'rentals'" class="space-y-4">
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+      <button mat-flat-button color="primary" (click)="openContractDialog()"><mat-icon>add</mat-icon> New Contract</button>
+    </div>
+
+    <div class="fin-card" style="overflow:hidden">
+      <div style="padding:1rem;border-bottom:1px solid #e2e8f0">
+        <h3 style="margin:0;color:#1e3a5f;font-weight:700">Rental Contracts</h3>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="fin-table">
+          <thead>
+            <tr>
+              <th>Property</th><th>Landlord</th><th>Frequency</th><th class="fin-numeric">Amount / Period</th>
+              <th>Start</th><th>End</th><th class="fin-numeric">Advance Per.</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of contracts">
+              <td>{{ c.propertyName }}</td>
+              <td>{{ c.landlord }}</td>
+              <td><span class="fin-section-badge" style="background:#e0e7ff;color:#3730a3">{{ c.frequency }}</span></td>
+              <td class="fin-numeric">{{ etb(c.amountPerPeriod) }}</td>
+              <td style="white-space:nowrap">{{ fmtDate(c.startDate) }}</td>
+              <td style="white-space:nowrap">{{ fmtDate(c.endDate) }}</td>
+              <td class="fin-numeric">{{ c.advancePeriods || 0 }}</td>
+              <td><span class="fin-section-badge" style="background:#d1fae5;color:#065f46">{{ c.status }}</span></td>
+              <td style="white-space:nowrap">
+                <button mat-icon-button matTooltip="Amortize prepaid rent" (click)="amortizeContract(c)">
+                  <mat-icon>event_available</mat-icon>
+                </button>
+                <button mat-icon-button matTooltip="Record payment" (click)="openPaymentDialog()">
+                  <mat-icon>payments</mat-icon>
+                </button>
+                <button mat-icon-button matTooltip="Edit" (click)="openContractDialog(c)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" matTooltip="Delete" (click)="deleteContract(c)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="contracts.length === 0">
+              <td colspan="9" style="color:#94a3b8;padding:1.5rem;text-align:center">No rental contracts</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="fin-card" style="overflow:hidden" *ngIf="contracts.length > 0">
+      <div style="padding:1rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0;color:#1e3a5f;font-weight:700">Rental Payments</h3>
+        <button mat-stroked-button (click)="openPaymentDialog()"><mat-icon>add</mat-icon> Record Payment</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="fin-table">
+          <thead>
+            <tr>
+              <th>Contract</th><th>Coverage</th><th class="fin-numeric">Amount</th>
+              <th class="fin-numeric">Expensed</th><th>Paid By</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of payments">
+              <td>{{ contractName(p.contractId) }}</td>
+              <td style="white-space:nowrap">{{ fmtDate(p.paidFrom) }} → {{ fmtDate(p.paidTo) }}</td>
+              <td class="fin-numeric">{{ etb(p.amountPaid) }}</td>
+              <td class="fin-numeric" style="color:#065f46">{{ etb(expensedPortion(p)) }}</td>
+              <td>{{ p.paidBy }}</td>
+              <td style="white-space:nowrap">
+                <button mat-icon-button color="warn" matTooltip="Delete" (click)="deletePayment(p)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="payments.length === 0">
+              <td colspan="6" style="color:#94a3b8;padding:1.5rem;text-align:center">No payments recorded</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

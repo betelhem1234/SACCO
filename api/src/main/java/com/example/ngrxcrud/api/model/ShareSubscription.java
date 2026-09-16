@@ -39,4 +39,15 @@ public class ShareSubscription {
 
     @Column(name = "created_at", nullable = false)
     private Long createdAt;
+
+    // PENDING, POSTED, REJECTED - see ShareStatus state machine
+    @Column(name = "status", length = 20)
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    private ShareStatus status;
+
+    @Column(name = "approved_by")
+    private UUID approvedBy;
+
+    @Column(name = "approved_at")
+    private Long approvedAt;
 }

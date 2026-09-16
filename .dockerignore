@@ -1,0 +1,20 @@
+node_modules
+**/node_modules
+.nx
+.angular
+dist
+!dist/web/browser
+api/target
+**/target
+.git
+.gitignore
+.github
+.idea
+.vscode
+*.log
+.env
+.env.local
+bety share
+ethiotrit
+gateway
+zemen

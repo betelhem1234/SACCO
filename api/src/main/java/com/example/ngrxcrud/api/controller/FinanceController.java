@@ -101,4 +101,37 @@ public class FinanceController {
             @RequestParam(required = false) String accountName) {
         return financeService.periodDetail(from, to, category, accountName);
     }
+
+    @GetMapping("/savings-report")
+    public FinanceReport.SavingsReport savingsReport(
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return financeService.savingsReport(from, to);
+    }
+
+    @GetMapping("/mandatory-tracker-report")
+    public FinanceReport.MandatoryTrackerReport mandatoryTrackerReport(@RequestParam int year) {
+        return financeService.mandatoryTrackerReport(year);
+    }
+
+    @GetMapping("/share-purchase-report")
+    public FinanceReport.SharePurchaseReport sharePurchaseReport(
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return financeService.sharePurchaseReport(from, to);
+    }
+
+    @GetMapping("/withdrawal-report")
+    public FinanceReport.WithdrawalReport withdrawalReport(
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return financeService.withdrawalReport(from, to);
+    }
+
+    @GetMapping("/transfer-report")
+    public FinanceReport.TransferReport transferReport(
+            @RequestParam(required = false) Long from,
+            @RequestParam(required = false) Long to) {
+        return financeService.transferReport(from, to);
+    }
 }

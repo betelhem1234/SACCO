@@ -316,3 +316,273 @@ export interface PeriodDetailParams {
   category: string;
   accountName?: string;
 }
+
+// ─── Savings Report ───────────────────────────────────────────────────────────
+
+/** Per saving type, POSTED collections vs ledger credits. */
+export interface SavingsTypeBreakdown {
+  savingTypeId?: string;
+  name: string;
+  mandatory: boolean;
+  memberCount: number;
+  count: number;
+  totalAmount: number;
+  postedAmount: number;
+  ledgerCredits: number;
+  difference: number;
+}
+
+/** One row per (member, saving type). */
+export interface SavingsMemberRow {
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  savingTypeId?: string;
+  savingTypeName: string;
+  mandatory: boolean;
+  count: number;
+  amount: number;
+  postedAmount: number;
+}
+
+/** One row per saving transaction (the flat register). */
+export interface SavingsTransactionRow {
+  id?: string;
+  date?: number | null;
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  savingTypeId?: string;
+  savingTypeName: string;
+  mandatory: boolean;
+  ftp?: string;
+  accountName?: string;
+  amount: number;
+  status: string;
+}
+
+export interface SavingsReport extends FinanceDateWindow {
+  byMember: SavingsMemberRow[];
+  transactions: SavingsTransactionRow[];
+  types: SavingsTypeBreakdown[];
+  transactionCount: number;
+  grandTotal: number;
+  pendingTotal: number;
+  ledgerTotal: number;
+  difference: number;
+}
+
+// ─── Mandatory Tracker Report ─────────────────────────────────────────────────
+
+/** One month cell inside a member's tracker matrix row. */
+export interface TrackerMonthCell {
+  month: number;
+  yearMonth: number;
+  required: number;
+  paid: number;
+  remaining: number;
+  status: string;
+}
+
+/** One member's row across the selected year. */
+export interface TrackerMemberRow {
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  months: TrackerMonthCell[];
+  requiredTotal: number;
+  paidTotal: number;
+  arrearsTotal: number;
+  fullyPaidMonths: number;
+  partialMonths: number;
+  unpaidMonths: number;
+  status: string;
+}
+
+/** Per-month roll-up of every member's obligation for that month. */
+export interface TrackerMonthTotal {
+  yearMonth: number;
+  label: string;
+  memberCount: number;
+  paidCount: number;
+  partialCount: number;
+  unpaidCount: number;
+  required: number;
+  paid: number;
+  remaining: number;
+}
+
+export interface MandatoryTrackerReport {
+  year: number;
+  savingTypeName: string;
+  members: TrackerMemberRow[];
+  months: TrackerMonthTotal[];
+  totalMembers: number;
+  totalRequired: number;
+  totalPaid: number;
+  totalArrears: number;
+}
+
+// ─── Share Purchase Report ────────────────────────────────────────────────────
+
+/** One row per member's share subscriptions + purchases in the window. */
+export interface SharePurchaseMemberRow {
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  count: number;
+  units: number;
+  amount: number;
+  purchaseAmount: number;
+  ledgerDebit: number;
+  difference: number;
+  subscriptionCount: number;
+  subscribedUnits: number;
+  subscribedAmount: number;
+  outstandingUnits: number;
+  outstandingAmount: number;
+}
+
+/** One share purchase transaction in the flat register. */
+export interface SharePurchaseTransactionRow {
+  id?: string;
+  date?: number | null;
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  units: number;
+  amount: number;
+  serviceFee: number;
+  shareAmount: number;
+  bankName?: string;
+  transactionReference?: string;
+  reconciled: boolean;
+}
+
+// ─── Withdrawal Report ─────────────────────────────────────────────────────
+
+/** Per saving type, POSTED withdrawals vs ledger debits. */
+export interface WithdrawalTypeBreakdown {
+  savingTypeId?: string;
+  name: string;
+  mandatory: boolean;
+  memberCount: number;
+  count: number;
+  totalAmount: number;
+  postedAmount: number;
+  ledgerDebits: number;
+  difference: number;
+}
+
+/** One row per (member, saving type). */
+export interface WithdrawalMemberRow {
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  savingTypeId?: string;
+  savingTypeName: string;
+  mandatory: boolean;
+  count: number;
+  amount: number;
+  postedAmount: number;
+}
+
+/** One row per withdrawal (the flat register). */
+export interface WithdrawalTransactionRow {
+  id?: string;
+  date?: number | null;
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  savingTypeId?: string;
+  savingTypeName: string;
+  mandatory: boolean;
+  ftp?: string;
+  bankName?: string;
+  amount: number;
+  status: string;
+}
+
+export interface WithdrawalReport extends FinanceDateWindow {
+  byMember: WithdrawalMemberRow[];
+  transactions: WithdrawalTransactionRow[];
+  types: WithdrawalTypeBreakdown[];
+  transactionCount: number;
+  grandTotal: number;
+  pendingTotal: number;
+  ledgerTotal: number;
+  difference: number;
+}
+
+// ─── Transfer Report ──────────────────────────────────────────────────────
+
+/** One row per transfer (the flat register). */
+export interface TransferTransactionRow {
+  id?: string;
+  date?: number | null;
+  type?: 'SAVING' | 'SHARE';
+  units?: number | null;
+  sourceMemberId?: string;
+  sourceMemberName: string;
+  sourceMemberNumber: string;
+  sourceSavingTypeName?: string;
+  destinationMemberId?: string;
+  destinationMemberName: string;
+  destinationMemberNumber: string;
+  destinationSavingTypeName?: string;
+  amount: number;
+  ftp?: string;
+  sourceLedger?: number;
+  destinationLedger?: number;
+  reconciled: boolean;
+}
+
+/** One row per member: source vs destination totals. */
+export interface TransferMemberRow {
+  memberId?: string;
+  memberName: string;
+  memberNumber: string;
+  sourceCount: number;
+  sourceAmount: number;
+  destinationCount: number;
+  destinationAmount: number;
+  netAmount: number;
+}
+
+export interface TransferReport extends FinanceDateWindow {
+  byMember: TransferMemberRow[];
+  transactions: TransferTransactionRow[];
+  transactionCount: number;
+  savingCount: number;
+  shareCount: number;
+  savingTotal: number;
+  shareTotal: number;
+  shareUnitsTotal: number;
+  grandTotal: number;
+  sourceLedgerTotal: number;
+  destinationLedgerTotal: number;
+  difference: number;
+}
+
+export interface SharePurchaseReport extends FinanceDateWindow {
+  byMember: SharePurchaseMemberRow[];
+  transactions: SharePurchaseTransactionRow[];
+  transactionCount: number;
+  grandTotal: number;
+  unitsTotal: number;
+  serviceFeeTotal: number;
+  shareCapitalTotal: number;
+  ledgerDebitTotal: number;
+  ledgerCreditTotal: number;
+  difference: number;
+  reconciledCount: number;
+  subscriptionCount: number;
+  subscribedUnitsTotal: number;
+  subscribedAmountTotal: number;
+  outstandingUnitsTotal: number;
+  outstandingAmountTotal: number;
+  authorizedCapital: number;
+  subscribedCapitalTotal: number;
+  purchasedCapitalTotal: number;
+  outstandingCapitalTotal: number;
+}

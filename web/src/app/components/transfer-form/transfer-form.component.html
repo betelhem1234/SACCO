@@ -77,6 +77,38 @@
         <mat-label>Remark</mat-label>
         <input matInput formControlName="remark" />
       </mat-form-field>
+
+      <div *ngIf="feePayable" class="border-t border-gray-100 my-1"></div>
+
+      <div *ngIf="feePayable" class="rounded-xl p-3 border"
+           style="background:#f0fdf4;border-color:#bbf7d0">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold m-0" style="color:#166534">Transfer Service Fee</p>
+          <p class="text-sm font-bold m-0" style="color:#166534">{{ computedFee() | number:'1.2-2' }} ETB</p>
+        </div>
+        <p class="text-xs m-0 mt-1" style="color:#15803d">
+          Flat {{ feeFlat | number:'1.2-2' }} ETB + {{ feePct | number:'1.2-2' }}% of the transfer amount.
+          The fee is credited to the configured revenue account.
+        </p>
+      </div>
+
+      <div *ngIf="feePayable" class="flex gap-3">
+        <mat-form-field appearance="outline" class="w-1/2">
+          <mat-label>Pay Service Fee From</mat-label>
+          <mat-select formControlName="feeSource" required>
+            <mat-option value="SAVING">From member's savings</mat-option>
+            <mat-option value="BANK">From bank</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field *ngIf="form.get('feeSource')?.value === 'BANK'" appearance="outline" class="w-1/2">
+          <mat-label>Bank Account</mat-label>
+          <mat-select formControlName="bankId" required>
+            <mat-option *ngFor="let a of bankAccounts$ | async" [value]="a.id">
+              {{ a.name }} {{ a.accountNumber ? '('+a.accountNumber+')' : '' }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
     </form>
   </mat-dialog-content>
 

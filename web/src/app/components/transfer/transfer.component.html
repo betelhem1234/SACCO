@@ -51,14 +51,48 @@
                 <th mat-header-cell *matHeaderCellDef>Amount (ETB)</th>
                 <td mat-cell *matCellDef="let row"><span class="font-semibold" style="color:#0891b2">{{ row.amount | number:'1.2-2' }}</span></td>
               </ng-container>
+              <ng-container matColumnDef="fee">
+                <th mat-header-cell *matHeaderCellDef>Service Fee</th>
+                <td mat-cell *matCellDef="let row">
+                  <span *ngIf="(row.serviceFee ?? 0) > 0">{{ row.serviceFee | number:'1.2-2' }} <span class="text-xs" style="color:#64748b">({{ feeSourceLabel(row.feeSource) }})</span></span>
+                  <span *ngIf="(row.serviceFee ?? 0) <= 0" style="color:#94a3b8">—</span>
+                </td>
+              </ng-container>
               <ng-container matColumnDef="date">
                 <th mat-header-cell *matHeaderCellDef>Date</th>
-                <td mat-cell *matCellDef="let row">{{ row.date | date:'yyyy-MM-dd' }}</td>
+                <td mat-cell *matCellDef="let row">{{ row.date | date }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full"
+                        [ngStyle]="getStatusBadgeStyle(row.status)">
+                    {{ row.status || 'POSTED' }}
+                  </span>
+                </td>
               </ng-container>
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>
                 <td mat-cell *matCellDef="let row" class="text-right pr-6">
-                  <button mat-icon-button matTooltip="Delete" (click)="deleteSavingTransfer(row)" class="!w-8 !h-8" style="color:#ef4444">
+                  <button mat-icon-button matTooltip="View" (click)="onView(row)" class="!w-8 !h-8" style="color:#059669">
+                    <mat-icon style="font-size:18px">visibility</mat-icon>
+                  </button>
+                  <button *ngIf="canPayFee(row)" mat-icon-button matTooltip="Pay Service Fee" (click)="onPayFee(row)" class="!w-8 !h-8" style="color:#0e7490">
+                    <mat-icon style="font-size:18px">payments</mat-icon>
+                  </button>
+                  <button *ngIf="canApprove(row)" mat-icon-button matTooltip="Approve" (click)="onApproveSavingTransfer(row)" class="!w-8 !h-8" style="color:#059669">
+                    <mat-icon style="font-size:18px">check_circle</mat-icon>
+                  </button>
+                  <button *ngIf="canExecute(row)" mat-icon-button matTooltip="Execute Transfer" (click)="onExecuteSavingTransfer(row)" class="!w-8 !h-8" style="color:#6d28d9">
+                    <mat-icon style="font-size:18px">send</mat-icon>
+                  </button>
+                  <button *ngIf="canReject(row)" mat-icon-button matTooltip="Reject" (click)="onRejectSavingTransfer(row)" class="!w-8 !h-8" style="color:#ef4444">
+                    <mat-icon style="font-size:18px">cancel</mat-icon>
+                  </button>
+                  <button *ngIf="!savingLocked(row)" mat-icon-button matTooltip="Edit" (click)="onEdit(row)" class="!w-8 !h-8" style="color:#0891b2">
+                    <mat-icon style="font-size:18px">edit</mat-icon>
+                  </button>
+                  <button *ngIf="!savingLocked(row)" mat-icon-button matTooltip="Delete" (click)="deleteSavingTransfer(row)" class="!w-8 !h-8" style="color:#ef4444">
                     <mat-icon style="font-size:18px">delete_outline</mat-icon>
                   </button>
                 </td>
@@ -112,7 +146,7 @@
               </ng-container>
               <ng-container matColumnDef="date">
                 <th mat-header-cell *matHeaderCellDef>Date</th>
-                <td mat-cell *matCellDef="let row">{{ row.transferDate | date:'yyyy-MM-dd' }}</td>
+                <td mat-cell *matCellDef="let row">{{ row.transferDate | date }}</td>
               </ng-container>
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef class="text-right pr-6">Actions</th>

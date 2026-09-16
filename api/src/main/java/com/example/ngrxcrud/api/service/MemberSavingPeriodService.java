@@ -93,10 +93,10 @@ public class MemberSavingPeriodService {
     // ---------------------------------------------------------------- core
 
     /**
-     * Called after a new mandatory-type saving is validated. Ensures the
-     * {@link MemberSavingPeriod} row reflects the cumulative paid amount and
-     * recomputes status. Returns the overflow amount to be swept into
-     * voluntary (0 if none).
+     * Called when a mandatory-type saving is approved (posted to the ledger).
+     * Ensures the {@link MemberSavingPeriod} row reflects the cumulative paid
+     * amount and recomputes status. Returns the overflow amount to be swept
+     * into voluntary (0 if none).
      *
      * @param memberId      the paying member
      * @param savingTypeId  the mandatory saving type
@@ -136,83 +136,21 @@ public class MemberSavingPeriodService {
     }
 
     /**
-     * Called when an existing mandatory-type saving is updated.
-     * Moves the amount delta between the old month and the new month.
-     * Returns any overflow to be swept to voluntary (from the new month).
+     * Reverses a previously reconciled mandatory saving: subtracts the paid
+     * amount from the member's period row and recomputes its status. Used when
+     * a POSTED saving is reversed back to PENDING.
      */
     @Transactional
-    public double reconcileUpdatedSaving(UUID memberId, UUID savingTypeId,
-                                         double oldAmount, long oldEpochMillis,
-                                         double newAmount, long newEpochMillis) {
-        int oldYm = yearMonthOf(oldEpochMillis);
-        int newYm = yearMonthOf(newEpochMillis);
-
-        if (oldYm == newYm) {
-            // Same month: just adjust the delta
-            MemberSavingPeriod period = periodRepository
-                    .findByMemberIdAndSavingTypeIdAndYearMonth(memberId, savingTypeId, oldYm)
-                    .orElse(null);
-            if (period != null) {
-                period.setPaidAmount(period.getPaidAmount() - oldAmount + newAmount);
-                period.setUpdatedAt(System.currentTimeMillis());
-                period.setStatus(SavingPeriodStatus.fromPaid(period.getPaidAmount(), period.getRequiredAmount()));
-                periodRepository.save(period);
-            }
-            return 0;
-        }
-
-        // Remove from old month
-        MemberSavingPeriod oldPeriod = periodRepository
-                .findByMemberIdAndSavingTypeIdAndYearMonth(memberId, savingTypeId, oldYm)
-                .orElse(null);
-        if (oldPeriod != null) {
-            oldPeriod.setPaidAmount(oldPeriod.getPaidAmount() - oldAmount);
-            oldPeriod.setUpdatedAt(System.currentTimeMillis());
-            oldPeriod.setStatus(SavingPeriodStatus.fromPaid(oldPeriod.getPaidAmount(), oldPeriod.getRequiredAmount()));
-            periodRepository.save(oldPeriod);
-        }
-
-        // Add to new month
-        double required = requiredAmountFor(memberId, savingTypeId, newYm, newEpochMillis);
-        MemberSavingPeriod newPeriod = periodRepository
-                .findByMemberIdAndSavingTypeIdAndYearMonth(memberId, savingTypeId, newYm)
-                .orElseGet(() -> {
-                    MemberSavingPeriod p = new MemberSavingPeriod();
-                    p.setMemberId(memberId); p.setSavingTypeId(savingTypeId);
-                    p.setYearMonth(newYm); p.setRequiredAmount(required);
-                    p.setPaidAmount(0); p.setStatus(SavingPeriodStatus.UNPAID);
-                    p.setCreatedAt(System.currentTimeMillis());
-                    p.setUpdatedAt(System.currentTimeMillis());
-                    return periodRepository.save(p);
-                });
-        newPeriod.setPaidAmount(newPeriod.getPaidAmount() + newAmount);
-        newPeriod.setRequiredAmount(required);
-        newPeriod.setUpdatedAt(System.currentTimeMillis());
-        newPeriod.setStatus(SavingPeriodStatus.fromPaid(newPeriod.getPaidAmount(), newPeriod.getRequiredAmount()));
-        periodRepository.save(newPeriod);
-
-        return 0;
-    }
-
-    /**
-     * Called when a mandatory-type saving is deleted.
-     * Returns any overflow that was previously allocated to voluntary (to
-     * reverse if needed). Currently just subtracts from the period.
-     */
-    @Transactional
-    public void reconcileDeletedSaving(UUID memberId, UUID savingTypeId,
-                                       double amount, long epochMillis) {
+    public void reverseSaving(UUID memberId, UUID savingTypeId, double amount, long epochMillis) {
         int ym = yearMonthOf(epochMillis);
-        MemberSavingPeriod period = periodRepository
-                .findByMemberIdAndSavingTypeIdAndYearMonth(memberId, savingTypeId, ym)
-                .orElse(null);
-        if (period != null) {
-            period.setPaidAmount(period.getPaidAmount() - amount);
-            if (period.getPaidAmount() < 0) period.setPaidAmount(0);
-            period.setUpdatedAt(System.currentTimeMillis());
-            period.setStatus(SavingPeriodStatus.fromPaid(period.getPaidAmount(), period.getRequiredAmount()));
-            periodRepository.save(period);
-        }
+        periodRepository.findByMemberIdAndSavingTypeIdAndYearMonth(memberId, savingTypeId, ym)
+                .ifPresent(period -> {
+                    period.setPaidAmount(Math.max(0, period.getPaidAmount() - amount));
+                    period.setRequiredAmount(requiredAmountFor(memberId, savingTypeId, ym, epochMillis));
+                    period.setStatus(SavingPeriodStatus.fromPaid(period.getPaidAmount(), period.getRequiredAmount()));
+                    period.setUpdatedAt(System.currentTimeMillis());
+                    periodRepository.save(period);
+                });
     }
 
     /**

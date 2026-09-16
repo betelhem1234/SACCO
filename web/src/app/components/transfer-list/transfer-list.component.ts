@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
@@ -34,6 +35,7 @@ interface EnrichedTransfer extends Transfer {
     MatIconModule,
     MatTableModule,
     MatPaginatorModule,
+    MatSortModule,
     MatDialogModule,
     MatTooltipModule
   ],
@@ -44,6 +46,7 @@ export class TransferListComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['sourceMember', 'sourceType', 'destMember', 'destType', 'amount', 'ftp', 'date', 'actions'];
   dataSource = new MatTableDataSource<any>();
   @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
 
   constructor(private store: Store<AppState>, private dialog: MatDialog) { }
 
@@ -65,11 +68,13 @@ export class TransferListComponent implements OnInit, AfterViewInit {
     ).subscribe(rows => {
       this.dataSource.data = rows;
       this.dataSource.paginator = this.paginator;
+      this.dataSource.sort = this.sort;
     });
   }
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
   }
 
   onAdd() {

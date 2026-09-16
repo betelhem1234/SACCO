@@ -243,11 +243,11 @@ export class MemberDetailComponent implements OnInit {
     return this.currentYear - year;
   }
 
-  formatDate(ts: number | undefined | null): string {
-    if (!ts) return '-';
-    const d = new Date(ts);
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-  }
+  // formatDate(ts: number | undefined | null): string {
+  //   if (!ts) return '-';
+  //   const d = new Date(ts);
+  //   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  // }
 
   lookupName(list: LookupItem[], id: string | undefined | null): string {
     if (!id) return '-';

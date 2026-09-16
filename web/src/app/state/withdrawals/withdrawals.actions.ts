@@ -24,3 +24,7 @@ export const approveWithdrawalFailure = createAction('[WITHDRAWAL] Approve Withd
 export const rejectWithdrawal = createAction('[WITHDRAWAL] Reject Withdrawal', props<{ id: string }>());
 export const rejectWithdrawalSuccess = createAction('[WITHDRAWAL] Reject Withdrawal Success', props<{ withdrawal: Withdrawal }>());
 export const rejectWithdrawalFailure = createAction('[WITHDRAWAL] Reject Withdrawal Failure', props<{ error: any }>());
+
+export const disburseWithdrawal = createAction('[WITHDRAWAL] Disburse Withdrawal', props<{ id: string; disbursedBy?: string; referenceNo?: string }>());
+export const disburseWithdrawalSuccess = createAction('[WITHDRAWAL] Disburse Withdrawal Success', props<{ withdrawal: Withdrawal }>());
+export const disburseWithdrawalFailure = createAction('[WITHDRAWAL] Disburse Withdrawal Failure', props<{ error: any }>());

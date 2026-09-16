@@ -4,7 +4,11 @@ import {
     loadTransfers, loadTransfersSuccess, loadTransfersFailure,
     addTransfer, addTransferSuccess, addTransferFailure,
     updateTransfer, updateTransferSuccess, updateTransferFailure,
-    deleteTransfer, deleteTransferSuccess, deleteTransferFailure
+    deleteTransfer, deleteTransferSuccess, deleteTransferFailure,
+    approveTransfer, approveTransferSuccess, approveTransferFailure,
+    rejectTransfer, rejectTransferSuccess, rejectTransferFailure,
+    executeTransfer, executeTransferSuccess, executeTransferFailure,
+    payTransferFee, payTransferFeeSuccess, payTransferFeeFailure
 } from './transfers.actions';
 
 export interface TransferState {
@@ -47,5 +51,37 @@ export const transferReducer = createReducer(
         transfers: state.transfers.filter(t => t.id !== id),
         status: 'success' as const
     })),
-    on(deleteTransferFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
+    on(deleteTransferFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(approveTransfer, (state) => ({ ...state, status: 'loading' as const })),
+    on(approveTransferSuccess, (state, { transfer }) => ({
+        ...state,
+        transfers: state.transfers.map(t => t.id === transfer.id ? transfer : t),
+        status: 'success' as const
+    })),
+    on(approveTransferFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(rejectTransfer, (state) => ({ ...state, status: 'loading' as const })),
+    on(rejectTransferSuccess, (state, { transfer }) => ({
+        ...state,
+        transfers: state.transfers.map(t => t.id === transfer.id ? transfer : t),
+        status: 'success' as const
+    })),
+    on(rejectTransferFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(executeTransfer, (state) => ({ ...state, status: 'loading' as const })),
+    on(executeTransferSuccess, (state, { transfer }) => ({
+        ...state,
+        transfers: state.transfers.map(t => t.id === transfer.id ? transfer : t),
+        status: 'success' as const
+    })),
+    on(executeTransferFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(payTransferFee, (state) => ({ ...state, status: 'loading' as const })),
+    on(payTransferFeeSuccess, (state, { transfer }) => ({
+        ...state,
+        transfers: state.transfers.map(t => t.id === transfer.id ? transfer : t),
+        status: 'success' as const
+    })),
+    on(payTransferFeeFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
 );

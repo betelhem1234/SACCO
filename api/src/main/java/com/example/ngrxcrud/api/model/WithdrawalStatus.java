@@ -4,23 +4,31 @@ package com.example.ngrxcrud.api.model;
  * State machine for a withdrawal record.
  *
  * <pre>
- *                    (auto, approval disabled)
- *   New Withdrawal ────────────────────────────▶ POSTED
+ *                    (approval &amp; disbursement off: posts immediately)
+ *   New Withdrawal ─────────────────────────────────────────────▶ POSTED
  *        │
- *        │ (approval enabled)
- *        ▼
- *     PENDING ──approve──▶ POSTED
- *        │
- *        └────reject──────▶ REJECTED
+ *        ├─(approval off, disbursement on)
+ *        │      PRE-APPROVED               DISBURSED
+ *        └▶ APPROVED ────disburse────────▶ (ledger)
+ *
+ *   (approval on, disbursement off)
+ *   PENDING ──approve──▶ POSTED (ledger)
+ *
+ *   (approval on, disbursement on)
+ *   PENDING ──approve──▶ APPROVED ──disburse──▶ DISBURSED (ledger)
+ *      │
+ *      └──reject──▶ REJECTED
  * </pre>
  *
- * Only POSTED records are posted to the ledger (debit saving account, credit
- * bank, and the negative saving entry). PENDING and REJECTED records can be
- * edited or deleted; POSTED records are locked.
+ * Ledger impact (debit saving account, credit bank, negative saving entry)
+ * happens at POSTED or DISBURSED. PENDING and REJECTED can be edited or
+ * deleted; APPROVED rows are locked awaiting disbursement.
  */
 public enum WithdrawalStatus {
     PENDING,
+    APPROVED,
     POSTED,
+    DISBURSED,
     REJECTED;
 
     /**
@@ -35,19 +43,23 @@ public enum WithdrawalStatus {
         return this == PENDING;
     }
 
+    public boolean canDisburse() {
+        return this == APPROVED;
+    }
+
     public boolean canReject() {
         return this == PENDING;
     }
 
     public boolean canEdit() {
-        return this != POSTED;
+        return this == PENDING || this == REJECTED;
     }
 
     public boolean canDelete() {
-        return this != POSTED;
+        return this == PENDING || this == REJECTED;
     }
 
     public boolean postsToLedger() {
-        return this == POSTED;
+        return this == POSTED || this == DISBURSED;
     }
 }

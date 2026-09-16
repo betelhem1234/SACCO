@@ -8,7 +8,7 @@
       <table class="fin-table fin-detail-table">
         <thead>
           <tr>
-            <th>Date</th>
+            <th (click)="toggleDateSort()" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date', 'date', sortAsc) }}</span></span></th>
             <th>Member Name</th>
             <th>Member ID</th>
             <th>Description</th>
@@ -17,7 +17,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of data.rows">
+          <tr *ngFor="let r of sortedRows()">
             <td>{{ fmtDate(r.date) }}</td>
             <td>{{ r.memberName || '—' }}</td>
             <td>{{ r.memberId || '—' }}</td>

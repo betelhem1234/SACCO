@@ -15,8 +15,8 @@ import {
   selectFinanceLoading,
   selectCashFlowStatementLoading,
 } from '../../../state/finance/finance.selectors';
-import { CashFlowActivityRow } from '@sacco/shared-models';
-import { etb, fmtDate, fmtDateTime, PERIOD_PRESETS, periodWindow, PeriodWindow, periodLabel } from '../../../utils/finance-format';
+import { CashFlowActivityRow, CashFlowRow } from '@sacco/shared-models';
+import { etb, fmtDate, fmtDateTime, PERIOD_PRESETS, periodWindow, PeriodWindow, periodLabel, sortIcon, sortRows } from '../../../utils/finance-format';
 
 @Component({
   selector: 'app-cash-flow',
@@ -40,6 +40,10 @@ export class CashFlowComponent implements OnInit {
   readonly fmtDate = fmtDate;
   readonly fmtDateTime = fmtDateTime;
   readonly periodLabel = periodLabel;
+  readonly sortIcon = sortIcon;
+
+  inflowAsc = false;
+  outflowAsc = false;
 
   ngOnInit(): void {
     this.onPeriodChange(this.presetId);
@@ -59,6 +63,19 @@ export class CashFlowComponent implements OnInit {
   ledgerParams(): Record<string, number | null> {
     const w: PeriodWindow = periodWindow(this.presetId);
     return { from: w.from, to: w.to };
+  }
+
+  toggleSort(which: 'inflows' | 'outflows'): void {
+    if (which === 'inflows') this.inflowAsc = !this.inflowAsc;
+    else this.outflowAsc = !this.outflowAsc;
+  }
+
+  sortedInflows(rows: CashFlowRow[]): CashFlowRow[] {
+    return sortRows(rows, 'date', this.inflowAsc);
+  }
+
+  sortedOutflows(rows: CashFlowRow[]): CashFlowRow[] {
+    return sortRows(rows, 'date', this.outflowAsc);
   }
 
   hasActivity(rows: CashFlowActivityRow[]): boolean {

@@ -52,7 +52,7 @@
       <table class="fin-table">
         <thead>
           <tr>
-            <th>Date</th>
+            <th (click)="sortBy('date')" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date', sortCol, sortAsc) }}</span></span></th>
             <th>Description</th>
             <th>Reference</th>
             <th class="fin-text-right">Debit</th>
@@ -61,7 +61,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let row of report.entries">
+          <tr *ngFor="let row of sortedEntries(report)">
             <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(row.date) }}</td>
             <td class="max-w-[300px]" style="color:#334155">{{ row.description || '—' }}</td>
             <td class="font-mono text-xs" style="color:#64748b">{{ row.reference || row.ftp || '—' }}</td>

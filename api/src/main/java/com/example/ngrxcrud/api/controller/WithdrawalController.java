@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -43,6 +44,25 @@ public class WithdrawalController {
     @Transactional
     public Withdrawal rejectWithdrawal(@PathVariable UUID id) {
         return withdrawalService.rejectWithdrawal(id);
+    }
+
+    /**
+     * Disburse an APPROVED withdrawal, posting it to the ledger.
+     * Body: { "disbursedBy": "<uuid>", "referenceNo": "REF-001" }
+     */
+    @PostMapping("/{id}/disburse")
+    @Transactional
+    public Withdrawal disburseWithdrawal(@PathVariable UUID id,
+                                         @RequestBody(required = false) Map<String, String> body) {
+        UUID disbursedBy = null;
+        String referenceNo = null;
+        if (body != null) {
+            if (body.get("disbursedBy") != null) {
+                disbursedBy = UUID.fromString(body.get("disbursedBy"));
+            }
+            referenceNo = body.getOrDefault("referenceNo", null);
+        }
+        return withdrawalService.disburseWithdrawal(id, disbursedBy, referenceNo);
     }
 
     @PutMapping("/{id}")

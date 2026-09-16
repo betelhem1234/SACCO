@@ -11,7 +11,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDividerModule } from '@angular/material/divider';
@@ -52,9 +51,6 @@ import { MemberPickerComponent } from '../member-picker/member-picker.component'
     MatDividerModule,
     MatProgressSpinnerModule,
     MatStepperModule,
-  ],
-  providers: [
-    provideNativeDateAdapter(),
   ],
   templateUrl: './member-form.component.html',
   styleUrls: ['./member-form.component.css'],

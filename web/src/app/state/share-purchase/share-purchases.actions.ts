@@ -16,3 +16,15 @@ export const updateSharePurchaseFailure = createAction('[SHARE_PURCHASE] Update 
 export const deleteSharePurchase = createAction('[SHARE_PURCHASE] Delete Share Purchase', props<{ id: string }>());
 export const deleteSharePurchaseSuccess = createAction('[SHARE_PURCHASE] Delete Share Purchase Success', props<{ id: string }>());
 export const deleteSharePurchaseFailure = createAction('[SHARE_PURCHASE] Delete Share Purchase Failure', props<{ error: any }>());
+
+export const approveSharePurchase = createAction('[SHARE_PURCHASE] Approve Share Purchase', props<{ id: string; approvedBy?: string }>());
+export const approveSharePurchaseSuccess = createAction('[SHARE_PURCHASE] Approve Share Purchase Success', props<{ sharePurchase: SharePurchase }>());
+export const approveSharePurchaseFailure = createAction('[SHARE_PURCHASE] Approve Share Purchase Failure', props<{ error: any }>());
+
+export const rejectSharePurchase = createAction('[SHARE_PURCHASE] Reject Share Purchase', props<{ id: string }>());
+export const rejectSharePurchaseSuccess = createAction('[SHARE_PURCHASE] Reject Share Purchase Success', props<{ sharePurchase: SharePurchase }>());
+export const rejectSharePurchaseFailure = createAction('[SHARE_PURCHASE] Reject Share Purchase Failure', props<{ error: any }>());
+
+export const reverseSharePurchase = createAction('[SHARE_PURCHASE] Reverse Share Purchase', props<{ id: string }>());
+export const reverseSharePurchaseSuccess = createAction('[SHARE_PURCHASE] Reverse Share Purchase Success', props<{ sharePurchase: SharePurchase }>());
+export const reverseSharePurchaseFailure = createAction('[SHARE_PURCHASE] Reverse Share Purchase Failure', props<{ error: any }>());

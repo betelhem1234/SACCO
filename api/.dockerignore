@@ -1,5 +1,7 @@
-# The image now builds itself, so the local target/ must NOT be sent
+# Backend is built on the host (see ./mvnw); the image just packages the jar.
+# The local target/ must NOT be sent — except the jar itself.
 target/
+!target/*.jar
 .mvn
 mvnw
 mvnw.cmd

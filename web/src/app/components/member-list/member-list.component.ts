@@ -121,6 +121,7 @@ export class MemberListComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
     setTimeout(() => this.searchMembers());
   }
 
@@ -336,11 +337,6 @@ export class MemberListComponent implements OnInit, AfterViewInit {
 
   onBulkEmail(): void {
     alert('Bulk Email feature - would open email dialog');
-  }
-
-  onSortChange(): void {
-    this.paginator.pageIndex = 0;
-    this.searchMembers();
   }
 
 

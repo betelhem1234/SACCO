@@ -26,7 +26,7 @@
                         </ng-container>
 
                         <ng-container *ngSwitchCase="'date'">
-                           {{ getValue(field) ? (getValue(field) | date:'medium') : '—' }}
+                           {{ getValue(field) ? (getValue(field) | date) : '—' }}
                         </ng-container>
 
                         <ng-container *ngSwitchCase="'boolean'">

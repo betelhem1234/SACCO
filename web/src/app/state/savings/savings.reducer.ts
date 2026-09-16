@@ -6,7 +6,8 @@ import {
     updateSaving, updateSavingSuccess, updateSavingFailure,
     deleteSaving, deleteSavingSuccess, deleteSavingFailure,
     approveSaving, approveSavingSuccess, approveSavingFailure,
-    rejectSaving, rejectSavingSuccess, rejectSavingFailure
+    rejectSaving, rejectSavingSuccess, rejectSavingFailure,
+    reverseSaving, reverseSavingSuccess, reverseSavingFailure
 } from './savings.actions';
 
 export interface SavingState {
@@ -88,6 +89,17 @@ export const savingReducer = createReducer(
         status: 'success' as const
     })),
     on(rejectSavingFailure, (state, { error }) => ({
+        ...state,
+        errorMessage: error,
+        status: 'error' as const
+    })),
+    on(reverseSaving, (state) => ({ ...state, status: 'loading' as const })),
+    on(reverseSavingSuccess, (state, { saving }) => ({
+        ...state,
+        savings: state.savings.map((s) => (s.id === saving.id ? saving : s)),
+        status: 'success' as const
+    })),
+    on(reverseSavingFailure, (state, { error }) => ({
         ...state,
         errorMessage: error,
         status: 'error' as const

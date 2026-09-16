@@ -1,0 +1,33 @@
+.fin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.fin-chip-posted {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.fin-chip-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.fin-subhead th {
+  border-top: none;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #94a3b8;
+  padding-top: 0.15rem;
+  padding-bottom: 0.15rem;
+}

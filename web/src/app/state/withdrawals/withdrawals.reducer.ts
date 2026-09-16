@@ -6,7 +6,8 @@ import {
     updateWithdrawal, updateWithdrawalSuccess, updateWithdrawalFailure,
     deleteWithdrawal, deleteWithdrawalSuccess, deleteWithdrawalFailure,
     approveWithdrawal, approveWithdrawalSuccess, approveWithdrawalFailure,
-    rejectWithdrawal, rejectWithdrawalSuccess, rejectWithdrawalFailure
+    rejectWithdrawal, rejectWithdrawalSuccess, rejectWithdrawalFailure,
+    disburseWithdrawal, disburseWithdrawalSuccess, disburseWithdrawalFailure
 } from './withdrawals.actions';
 
 export interface WithdrawalState {
@@ -65,5 +66,13 @@ export const withdrawalReducer = createReducer(
         withdrawals: state.withdrawals.map(w => w.id === withdrawal.id ? withdrawal : w),
         status: 'success' as const
     })),
-    on(rejectWithdrawalFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
+    on(rejectWithdrawalFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(disburseWithdrawal, (state) => ({ ...state, status: 'loading' as const })),
+    on(disburseWithdrawalSuccess, (state, { withdrawal }) => ({
+        ...state,
+        withdrawals: state.withdrawals.map(w => w.id === withdrawal.id ? withdrawal : w),
+        status: 'success' as const
+    })),
+    on(disburseWithdrawalFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
 );

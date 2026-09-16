@@ -12,7 +12,12 @@
   --accent-dark: #059669;
   --accent-light: #34d399;
   --surface: #f8fafc;
-  --sidebar-width: 260px;
+  --sidebar-width: 300px;
+}
+
+/* Slightly larger base font so all rem-based text scales up ~6% */
+html {
+  font-size: 17px;
 }
 
 html,
@@ -26,6 +31,7 @@ body {
   font-family: 'Inter', 'Roboto', 'Helvetica Neue', sans-serif;
   background-color: var(--surface);
   color: #1e293b;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Scrollbar */
@@ -65,10 +71,15 @@ body {
   font-family: 'Inter', sans-serif !important;
 }
 
+.mat-mdc-cell {
+  font-size: 0.9375rem !important;
+  line-height: 1.3 !important;
+}
+
 .mat-mdc-header-cell {
   font-weight: 600 !important;
-  font-size: 0.75rem !important;
-  letter-spacing: 0.08em !important;
+  font-size: 0.8125rem !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   color: #64748b !important;
   background: #f8fafc !important;
@@ -77,6 +88,41 @@ body {
 .mat-mdc-row:hover {
   background: #f0fdf4 !important;
   transition: background 0.15s ease;
+}
+
+/* Selects, options, form fields, dialogs, tabs, paginator, snackbars */
+.mat-mdc-select-value-text,
+.mat-mdc-option {
+  font-size: 0.9375rem !important;
+}
+
+.mat-mdc-form-field .mdc-floating-label {
+  font-size: 1rem;
+}
+
+.mat-mdc-dialog-title {
+  font-size: 1.375rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+}
+
+.mat-mdc-dialog-content {
+  font-size: 0.9375rem !important;
+  line-height: 1.5 !important;
+}
+
+.mat-mdc-tab .mdc-tab__text-label {
+  font-size: 0.9375rem !important;
+}
+
+.mat-mdc-paginator,
+.mat-mdc-paginator-range-label {
+  font-size: 0.9375rem !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__label {
+  font-size: 0.9375rem;
+  line-height: 1.4;
 }
 
 /* Dialog */
@@ -144,14 +190,14 @@ body {
 .fin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
 }
 
 .fin-table th {
   text-align: left;
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #64748b;
   background: #f8fafc;
@@ -196,11 +242,11 @@ body {
 }
 
 .fin-section-badge {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.22rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 999px;
 }
 
@@ -208,9 +254,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  padding: 0.3rem 0.7rem;
+  padding: 0.35rem 0.8rem;
   border-radius: 999px;
   border: 1px solid transparent;
   cursor: pointer;

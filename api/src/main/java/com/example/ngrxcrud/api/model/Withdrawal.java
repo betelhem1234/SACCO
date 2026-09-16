@@ -54,4 +54,14 @@ public class Withdrawal {
 
     @Column(name = "approved_at")
     private Long approvedAt;
+
+    // PENDING, APPROVED, POSTED, DISBURSED, REJECTED - see WithdrawalStatus state machine
+    @Column(name = "disbursed_by")
+    private java.util.UUID disbursedBy;
+
+    @Column(name = "disbursed_at")
+    private Long disbursedAt;
+
+    @Column(name = "disbursed_reference")
+    private String disbursedReference;
 }

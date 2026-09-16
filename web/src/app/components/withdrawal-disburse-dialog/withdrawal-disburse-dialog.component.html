@@ -1,0 +1,37 @@
+<div class="bg-white rounded-2xl" style="width:420px;max-width:90vw" [formGroup]="form">
+  <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">payments</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">Disburse Withdrawal</h2>
+      <p class="text-xs m-0" style="color:#ddd6fe">{{ data.memberName }}</p>
+    </div>
+    <button mat-icon-button (click)="onCancel()" class="ml-auto" style="color:white">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content class="px-6 py-5" style="background:#f8fafc">
+    <div class="rounded-xl border p-4 mb-4 flex items-center justify-between" style="background:#f5f3ff;border-color:#ddd6fe">
+      <span class="text-sm font-semibold" style="color:#5b21b6">Amount to disburse</span>
+      <span class="text-lg font-bold" style="color:#5b21b6">{{ data.amount | number:'1.2-2' }} ETB</span>
+    </div>
+
+    <div class="mb-2">
+      <label class="block text-sm font-semibold mb-1.5" style="color:#334155">Disbursement Reference (optional)</label>
+      <input formControlName="referenceNo" placeholder="e.g. BANK-REF-001"
+             class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 outline-none"
+             style="background:white">
+      <p class="text-xs mt-1" style="color:#94a3b8">This transaction will be posted to the ledger (finance impact).</p>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="px-6 py-4 bg-white" style="border-top:1px solid #e2e8f0">
+    <button mat-button (click)="onCancel()" class="font-semibold" style="color:#64748b">Cancel</button>
+    <button mat-raised-button (click)="onDisburse()" class="font-semibold text-white"
+            style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">
+      <mat-icon style="font-size:18px">send</mat-icon> Confirm Disbursement
+    </button>
+  </mat-dialog-actions>
+</div>

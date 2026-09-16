@@ -20,6 +20,9 @@ public interface MemberSavingPeriodRepository extends JpaRepository<MemberSaving
     List<MemberSavingPeriod> findBySavingTypeIdAndYearMonthGreaterThanEqualOrderByYearMonthAsc(
             UUID savingTypeId, int yearMonth);
 
+    List<MemberSavingPeriod> findBySavingTypeIdAndYearMonthBetweenOrderByYearMonthAsc(
+            UUID savingTypeId, int fromYearMonth, int toYearMonth);
+
     List<MemberSavingPeriod> findByMemberIdAndSavingTypeId(
             UUID memberId, UUID savingTypeId);
 

@@ -11,7 +11,7 @@ import { selectGeneralLedger, selectFinanceLoading } from '../../../state/financ
 import { selectAllAccounts } from '../../../state/lookups/lookups.selectors';
 import { loadAccounts } from '../../../state/lookups/lookups.actions';
 import { Account, accountTypeLabel, GeneralLedgerReport } from '@sacco/shared-models';
-import { etb, fmtDate, windowLabel } from '../../../utils/finance-format';
+import { etb, fmtDate, sortIcon, sortRows, windowLabel } from '../../../utils/finance-format';
 
 @Component({
   selector: 'app-account-ledger',
@@ -32,6 +32,11 @@ export class AccountLedgerComponent implements OnInit, OnDestroy {
   accountId: string | null = null;
   from: number | null = null;
   to: number | null = null;
+
+  sortCol = 'date';
+  sortAsc = false;
+  readonly sortIcon = sortIcon;
+  readonly sortRows = sortRows;
 
   readonly etb = etb;
   readonly fmtDate = fmtDate;
@@ -85,6 +90,19 @@ export class AccountLedgerComponent implements OnInit, OnDestroy {
     const entries = report?.entries ?? [];
     if (entries.length === 0) return report?.openingBalance ?? 0;
     return entries[entries.length - 1].runningBalance ?? 0;
+  }
+
+  sortBy(col: string): void {
+    if (this.sortCol === col) {
+      this.sortAsc = !this.sortAsc;
+    } else {
+      this.sortCol = col;
+      this.sortAsc = col !== 'date';
+    }
+  }
+
+  sortedEntries(report: GeneralLedgerReport | null): GeneralLedgerReport['entries'] {
+    return sortRows(report?.entries ?? [], this.sortCol, this.sortAsc) as GeneralLedgerReport['entries'];
   }
 
   back(): void {

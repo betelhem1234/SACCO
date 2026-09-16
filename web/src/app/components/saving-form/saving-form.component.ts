@@ -18,6 +18,7 @@ import { selectAllMembers } from '../../state/members/members.selectors';
 import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups/lookups.selectors';
 import { loadAccounts, loadSavingTypes } from '../../state/lookups/lookups.actions';
 import { ApiService } from '../../services/api.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-saving-form',
@@ -53,6 +54,7 @@ export class SavingFormComponent implements OnInit {
     private store: Store<AppState>,
     private fb: FormBuilder,
     private api: ApiService,
+    private settingsService: SettingsService,
     private dialogRef: MatDialogRef<SavingFormComponent>,
     @Optional() @Inject(MAT_DIALOG_DATA) public data: { saving?: Saving; memberId?: string } | undefined
   ) { }
@@ -115,7 +117,9 @@ export class SavingFormComponent implements OnInit {
       if (type!.isMandatory) {
         this.requiredMin = { amount, date, typeName: type!.name };
       }
-      const min = Math.max(1, amount ?? 0);
+      const partialAllowed = type!.isMandatory
+          && this.settingsService.settings()['mandatory_partial_payment'] === 'true';
+      const min = partialAllowed ? 0.01 : Math.max(1, amount ?? 0);
       amountCtrl?.setValidators([Validators.required, Validators.min(min)]);
       amountCtrl?.updateValueAndValidity();
       if (autoFill && (amountCtrl?.value === null || amountCtrl?.value === '')) {

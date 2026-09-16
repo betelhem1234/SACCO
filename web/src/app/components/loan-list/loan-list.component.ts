@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
 import { Router } from '@angular/router';
 
@@ -26,6 +27,7 @@ import { map } from 'rxjs/operators';
         MatIconModule,
         MatTableModule,
         MatPaginatorModule,
+        MatSortModule,
         MatChipsModule
     ],
     templateUrl: './loan-list.component.html',
@@ -38,6 +40,7 @@ export class LoanListComponent implements OnInit, AfterViewInit {
     displayedColumns: string[] = ['date', 'member', 'amount', 'interest', 'disbursed', 'status', 'actions'];
     dataSource = new MatTableDataSource<Loan>();
     @ViewChild(MatPaginator) paginator!: MatPaginator;
+    @ViewChild(MatSort) sort!: MatSort;
 
     constructor(
         private store: Store<AppState>,
@@ -53,11 +56,13 @@ export class LoanListComponent implements OnInit, AfterViewInit {
         this.loans$.subscribe(loans => {
             this.dataSource.data = [...(loans ?? [])].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             this.dataSource.paginator = this.paginator;
+            this.dataSource.sort = this.sort;
         });
     }
 
     ngAfterViewInit(): void {
         this.dataSource.paginator = this.paginator;
+        this.dataSource.sort = this.sort;
     }
 
     getMemberName(memberId: string): Observable<string> {

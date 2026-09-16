@@ -1,0 +1,389 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#3b82f6,#1e40af)">
+      <span class="material-icons text-white" style="font-size:20px">savings</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Savings Report</h1>
+      <p class="text-xs" style="color:#64748b">{{ periodLabel(presetId) }} · {{ report.byMember.length }} member rows · {{ report.transactionCount }} posted transactions</p>
+    </div>
+    <mat-button-toggle-group [value]="view" (change)="setView($event.value)" class="rounded-xl overflow-hidden">
+      <mat-button-toggle *ngFor="let v of viewOptions" [value]="v.id" class="!text-xs">
+        <span class="material-icons mr-1" style="font-size:16px">{{ v.icon }}</span>{{ v.label }}
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+    <mat-form-field appearance="outline" class="min-w-[190px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#3b82f6,#1e40af)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ windowLabel(report.from, report.to) }}</span>
+  </p>
+
+  <!-- Table view -->
+  <ng-container *ngIf="view === 'TABLE'">
+  <!-- Reconciliation summary strip -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Posted collections</p>
+      <p class="text-xl font-extrabold" style="color:#065f46">{{ etb(report.grandTotal) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Pending approval</p>
+      <p class="text-xl font-extrabold" style="color:#b45309">{{ etb(report.pendingTotal) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Ledger credits</p>
+      <p class="text-xl font-extrabold" style="color:#1e40af">{{ etb(report.ledgerTotal) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Difference (record vs ledger)</p>
+      <p class="text-xl font-extrabold" [style.color]="report.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(report.difference) }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <div class="xl:col-span-2 space-y-5">
+      <!-- Saving type breakdown -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#3b82f6"></span>
+            Saving Types — Collections vs Ledger
+          </h2>
+          <span class="fin-section-badge" style="background:#dbeafe;color:#1e40af">{{ report.types.length }} type(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Saving type</th>
+                <th class="fin-text-right">Members</th>
+                <th class="fin-text-right">Txn</th>
+                <th class="fin-text-right">Total collected</th>
+                <th class="fin-text-right">Posted</th>
+                <th class="fin-text-right">Ledger credit</th>
+                <th class="fin-text-right">Difference</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let t of report.types">
+                <td>
+                  <span class="font-semibold" style="color:#1e293b">{{ t.name }}</span>
+                  <span class="fin-chip ml-2" [class]="t.mandatory ? 'fin-chip-mandatory' : 'fin-chip-voluntary'">{{ typeLabel(t.mandatory) }}</span>
+                </td>
+                <td class="fin-numeric" style="color:#475569">{{ num(t.memberCount, 0) }}</td>
+                <td class="fin-numeric" style="color:#475569">{{ num(t.count, 0) }}</td>
+                <td class="fin-numeric" style="color:#475569">{{ etb(t.totalAmount) }}</td>
+                <td class="fin-numeric font-semibold" style="color:#065f46">{{ etb(t.postedAmount) }}</td>
+                <td class="fin-numeric" style="color:#1e40af">{{ etb(t.ledgerCredits) }}</td>
+                <td class="fin-numeric font-semibold" [style.color]="t.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(t.difference) }}</td>
+              </tr>
+              <tr class="fin-total-row" *ngIf="report.types.length > 0">
+                <td class="font-bold">Total</td>
+                <td class="fin-numeric">—</td>
+                <td class="fin-numeric">{{ num(report.transactionCount, 0) }}</td>
+                <td class="fin-numeric">{{ etb(report.grandTotal + report.pendingTotal) }}</td>
+                <td class="fin-numeric">{{ etb(report.grandTotal) }}</td>
+                <td class="fin-numeric">{{ etb(report.ledgerTotal) }}</td>
+                <td class="fin-numeric">{{ etb(report.difference) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Collections by member -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#8b5cf6"></span>
+            Collections by Member
+          </h2>
+          <span class="fin-section-badge" style="background:#ede9fe;color:#5b21b6">{{ report.byMember.length }} row(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Saving type</th>
+                <th class="fin-text-right">Txn</th>
+                <th class="fin-text-right">Amount</th>
+                <th class="fin-text-right">Posted</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of report.byMember">
+                <td>
+                  <span class="font-medium" style="color:#1e293b">{{ r.memberName }}</span>
+                  <span class="text-xs ml-1" style="color:#94a3b8">{{ r.memberNumber }}</span>
+                </td>
+                <td>
+                  {{ r.savingTypeName }}
+                  <span class="fin-chip ml-1" [class]="r.mandatory ? 'fin-chip-mandatory' : 'fin-chip-voluntary'">{{ typeLabel(r.mandatory) }}</span>
+                </td>
+                <td class="fin-numeric" style="color:#475569">{{ num(r.count, 0) }}</td>
+                <td class="fin-numeric" style="color:#475569">{{ etb(r.amount) }}</td>
+                <td class="fin-numeric font-semibold" style="color:#065f46">{{ etb(r.postedAmount) }}</td>
+              </tr>
+            </tbody>
+            <tbody *ngIf="report.byMember.length === 0">
+              <tr>
+                <td colspan="5" class="text-center py-8" style="color:#94a3b8">No collections recorded in this period.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Posted transactions register -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+            Posted Transactions Register
+          </h2>
+          <span class="fin-section-badge" style="background:#d1fae5;color:#065f46">{{ report.transactionCount }} posted</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th (click)="toggleDateSort()" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date', 'date', sortAsc) }}</span></span></th>
+                <th>Member</th>
+                <th>Saving type</th>
+                <th>Reference (FTP)</th>
+                <th>Account</th>
+                <th class="fin-text-right">Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tx of sortedTransactions(report)">
+                <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(tx.date) }}</td>
+                <td>
+                  <span class="font-medium" style="color:#1e293b">{{ tx.memberName }}</span>
+                  <span class="text-xs ml-1" style="color:#94a3b8">{{ tx.memberNumber }}</span>
+                </td>
+                <td>
+                  {{ tx.savingTypeName }}
+                  <span class="fin-chip ml-1" [class]="tx.mandatory ? 'fin-chip-mandatory' : 'fin-chip-voluntary'">{{ typeLabel(tx.mandatory) }}</span>
+                </td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ tx.ftp || '—' }}</td>
+                <td style="color:#475569">{{ tx.accountName || '—' }}</td>
+                <td class="fin-numeric font-semibold" style="color:#065f46">{{ etb(tx.amount) }}</td>
+                <td><span class="fin-chip" [class]="statusClass(tx.status)">{{ tx.status }}</span></td>
+              </tr>
+            </tbody>
+            <tbody *ngIf="report.transactions.length === 0">
+              <tr>
+                <td colspan="7" class="text-center py-8" style="color:#94a3b8">No POSTED transactions in this period.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary sidebar -->
+    <div class="space-y-5">
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Summary</h3>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Posted collections</dt>
+            <dd class="font-semibold" style="color:#1e293b">{{ etb(report.grandTotal) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Pending approval</dt>
+            <dd class="font-semibold" style="color:#1e293b">{{ etb(report.pendingTotal) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Ledger credits</dt>
+            <dd class="font-semibold" style="color:#1e40af">{{ etb(report.ledgerTotal) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Difference</dt>
+            <dd class="font-extrabold" [style.color]="report.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(report.difference) }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Reconciliation status</h3>
+        <div class="flex items-center gap-3">
+          <span class="material-icons" [style.color]="report.difference === 0 ? '#10b981' : '#dc2626'" style="font-size:28px">
+            {{ report.difference === 0 ? 'verified' : 'error_outline' }}
+          </span>
+          <p class="text-xs" style="color:#475569">
+            <ng-container *ngIf="report.difference === 0; else mismatched">
+              Savings records match the finance (journal) system for this period.
+            </ng-container>
+            <ng-template #mismatched>
+              Posted savings differ from ledger credit entries by {{ etb(abs(report.difference)) }}.
+            </ng-template>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  </ng-container>
+
+  <!-- Chart view -->
+  <ng-container *ngIf="view === 'CHART'">
+    <div *ngIf="chartsEmpty(report); else chartContent" class="fin-card p-10 text-center" style="color:#94a3b8">
+      <span class="material-icons" style="font-size:36px">insights</span>
+      <p class="mt-2 text-sm">No savings data to chart for this period.<br>Switch to Table view or widen the period.</p>
+    </div>
+    <ng-template #chartContent>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <!-- Monthly collections trend -->
+        <div class="fin-card overflow-hidden xl:col-span-2">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#3b82f6"></span>
+              Monthly Collections Trend
+            </h2>
+            <span class="fin-section-badge" style="background:#dbeafe;color:#1e40af">{{ monthlyTrend(report).length }} month(s)</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="monthlyTrend(report) as trend">
+              <svg *ngIf="trend.length > 0" viewBox="0 0 640 260" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="savTrendBar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#60a5fa"></stop>
+                    <stop offset="100%" stop-color="#1e40af"></stop>
+                  </linearGradient>
+                </defs>
+                <rect *ngFor="let b of trend" [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.w" [attr.height]="b.h" rx="4" fill="url(#savTrendBar)">
+                  <title>{{ b.label }} · {{ etb(b.value) }}</title>
+                </rect>
+                <text *ngFor="let b of trend" [attr.x]="b.x + b.w / 2" [attr.y]="b.y - 6" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">{{ b.display }}</text>
+                <text *ngFor="let b of trend" [attr.x]="b.x + b.w / 2" [attr.y]="252" text-anchor="middle" font-size="10" fill="#64748b">{{ b.label }}</text>
+              </svg>
+              <p *ngIf="trend.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No POSTED transactions in this period to chart.</p>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Collections vs Ledger by saving type -->
+        <div class="fin-card overflow-hidden">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+              Collections vs Ledger by Saving Type
+            </h2>
+            <span class="fin-section-badge" style="background:#d1fae5;color:#065f46">{{ report.types.length }} type(s)</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="typeColumns(report) as cols">
+              <svg *ngIf="cols.length > 0" viewBox="0 0 640 260" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <rect *ngFor="let c of cols" [attr.x]="c.postedX" [attr.y]="c.postedY" [attr.width]="c.bw" [attr.height]="c.postedH" rx="4" fill="#10b981">
+                  <title>{{ c.name }} · posted {{ c.postedDisplay }}</title>
+                </rect>
+                <rect *ngFor="let c of cols" [attr.x]="c.ledgerX" [attr.y]="c.ledgerY" [attr.width]="c.bw" [attr.height]="c.ledgerH" rx="4" fill="#3b82f6">
+                  <title>{{ c.name }} · ledger credit {{ c.ledgerDisplay }}</title>
+                </rect>
+                <text *ngFor="let c of cols" [attr.x]="c.postedX + c.bw / 2" [attr.y]="c.postedY - 5" text-anchor="middle" font-size="9" font-weight="600" fill="#065f46">{{ c.postedDisplay }}</text>
+                <text *ngFor="let c of cols" [attr.x]="c.ledgerX + c.bw / 2" [attr.y]="c.ledgerY - 5" text-anchor="middle" font-size="9" font-weight="600" fill="#1e40af">{{ c.ledgerDisplay }}</text>
+                <text *ngFor="let c of cols" [attr.x]="c.postedX + 11" y="252" text-anchor="middle" font-size="9" fill="#64748b">{{ c.name }}</text>
+              </svg>
+              <div *ngIf="cols.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No posted or ledger amounts for this period.</div>
+              <div *ngIf="cols.length > 0" class="mt-2 flex items-center justify-center gap-6 text-xs" style="color:#475569">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#10b981"></span> Posted</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#3b82f6"></span> Ledger credit</span>
+                <span class="font-semibold" style="color:#1e293b">Grand total {{ etb(report.grandTotal) }}</span>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Composition by saving type -->
+        <div class="fin-card overflow-hidden">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#8b5cf6"></span>
+              Composition by Saving Type
+            </h2>
+            <span class="fin-section-badge" style="background:#ede9fe;color:#5b21b6">{{ report.types.length }} type(s)</span>
+          </div>
+          <div class="p-4">
+            <div class="flex flex-col items-center gap-4">
+              <svg viewBox="0 0 220 200" class="w-full max-w-[220px] h-auto">
+                <g transform="translate(110 100)">
+                  <circle r="70" fill="none" stroke="#e2e8f0" stroke-width="26"></circle>
+                  <circle *ngFor="let s of donutSlices(report)" r="70" fill="none" [attr.stroke]="s.color" stroke-width="26"
+                          [attr.stroke-dasharray]="s.dash" [attr.transform]="'rotate(' + s.rotate + ')'">
+                    <title>{{ s.name }} · {{ etb(s.value) }} ({{ num(s.percent, 1) }}%)</title>
+                  </circle>
+                  <text x="0" y="-6" text-anchor="middle" font-size="11" fill="#64748b">Posted</text>
+                  <text x="0" y="15" text-anchor="middle" font-size="16" font-weight="700" fill="#1e293b">{{ etb(report.grandTotal) }}</text>
+                </g>
+              </svg>
+              <div class="w-full space-y-1.5">
+                <div *ngFor="let s of donutSlices(report)" class="flex items-center justify-between text-sm py-0.5">
+                  <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full inline-block" [style.background]="s.color"></span>
+                    <span style="color:#334155">{{ s.name }}</span>
+                  </span>
+                  <span class="font-semibold" style="color:#1e293b">{{ etb(s.value) }} <span class="text-xs" style="color:#94a3b8">({{ num(s.percent, 1) }}%)</span></span>
+                </div>
+                <div *ngIf="donutSlices(report).length === 0" class="text-center py-6 text-sm" style="color:#94a3b8">No posted amounts to break down.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top contributors -->
+        <div class="fin-card overflow-hidden">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#f59e0b"></span>
+              Top Contributors
+            </h2>
+            <span class="fin-section-badge" style="background:#fef3c7;color:#b45309">top {{ topContributors(report).length }}</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="topContributors(report) as tops">
+              <svg *ngIf="tops.length > 0" [attr.viewBox]="'0 0 620 ' + (30 + tops.length * 30)" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <text *ngFor="let t of tops" [attr.x]="4" [attr.y]="t.y + 11" font-size="10">
+                  <tspan fill="#334155" font-weight="600">{{ t.name }}</tspan>
+                  <tspan fill="#94a3b8"> · #{{ t.number }}</tspan>
+                </text>
+                <rect *ngFor="let t of tops" [attr.x]="t.x" [attr.y]="t.y" [attr.width]="t.w" [attr.height]="t.h" rx="4" fill="#8b5cf6">
+                  <title>{{ t.name }} · {{ etb(t.value) }}</title>
+                </rect>
+                <text *ngFor="let t of tops" [attr.x]="t.x + t.w + 6" [attr.y]="t.y + 12" font-size="10" font-weight="600" fill="#5b21b6">{{ t.display }}</text>
+              </svg>
+              <p *ngIf="tops.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No contributor data for this period.</p>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ng-container>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <div *ngIf="loading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#64748b">Loading savings report…</p>
+    </div>
+  </div>
+</ng-template>

@@ -52,12 +52,12 @@ public class SavingService {
 
     /**
      * Creates a saving. If approval is enabled the saving starts PENDING (no
-     * ledger posting); otherwise it is POSTED immediately.
+     * ledger posting, no tracker update until it is approved); otherwise it is
+     * POSTED immediately and the mandatory tracker/ledger are updated at once.
      */
     @Transactional
     public Saving createSaving(Saving saving) {
         double overflow = validateMinimumAmount(saving);
-        reconcileTracker(saving, overflow);
         saving.setStatus(requiresApproval() ? SavingStatus.PENDING : SavingStatus.POSTED);
         if (saving.getCreatedAt() == null) {
             saving.setCreatedAt(System.currentTimeMillis());
@@ -65,13 +65,15 @@ public class SavingService {
         Saving saved = savingRepository.save(saving);
         if (SavingStatus.resolve(saved.getStatus()).postsToLedger()) {
             postToLedger(saved);
+            reconcileTracker(saved, overflow);
+            sweepOverflowToVoluntary(saved, overflow);
         }
-        sweepOverflowToVoluntary(saved, overflow);
         return saved;
     }
 
     /**
-     * Approves a PENDING saving and posts it to the ledger.
+     * Approves a PENDING saving, posts it to the ledger, and updates the
+     * mandatory tracker (period row) only now that it is confirmed.
      * PENDING → POSTED
      */
     @Transactional
@@ -82,11 +84,14 @@ public class SavingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Only PENDING savings can be approved");
         }
+        double overflow = validateMinimumAmount(saving);
         saving.setStatus(SavingStatus.POSTED);
         saving.setApprovedBy(approvedBy);
         saving.setApprovedAt(System.currentTimeMillis());
         Saving saved = savingRepository.save(saving);
         postToLedger(saved);
+        reconcileTracker(saved, overflow);
+        sweepOverflowToVoluntary(saved, overflow);
         return saved;
     }
 
@@ -107,7 +112,42 @@ public class SavingService {
     }
 
     /**
-     * Updates a non-POSTED saving. POSTED records are locked.
+     * Reverses a POSTED saving back to PENDING. Removes its ledger entries
+     * and the mandatory tracker contribution (including any swept-to-voluntary
+     * overflow record and its entries) so the record can be corrected or
+     * rejected. POSTED → PENDING
+     */
+    @Transactional
+    public Saving reverseSaving(UUID id) {
+        Saving saving = getSaving(id);
+        SavingStatus status = SavingStatus.resolve(saving.getStatus());
+        if (!status.canReverse()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only POSTED savings can be reversed to PENDING");
+        }
+        SavingType type = saving.getSavingType() != null
+                ? savingTypeRepository.findById(saving.getSavingType()).orElse(null)
+                : null;
+
+        journalEntryService.deleteEntriesByTargetId(id);
+
+        if (type != null && Boolean.TRUE.equals(type.getIsMandatory())
+                && saving.getSavingAmount() != null) {
+            double overflow = reverseOverflowToVoluntary(saving);
+            double mandatoryPortion = saving.getSavingAmount() - Math.max(0, overflow);
+            memberSavingPeriodService.reverseSaving(
+                    saving.getMemberId(), saving.getSavingType(),
+                    mandatoryPortion,
+                    saving.getSavingDate() != null ? saving.getSavingDate() : System.currentTimeMillis());
+        }
+
+        saving.setStatus(SavingStatus.PENDING);
+        return savingRepository.save(saving);
+    }
+
+    /**
+     * Updates a non-POSTED saving. POSTED records are locked. Tracker and
+     * ledger are untouched here; they are applied on the next approval.
      */
     @Transactional
     public Saving updateSaving(UUID id, Saving incoming) {
@@ -117,10 +157,7 @@ public class SavingService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Posted savings cannot be edited");
         }
-        double oldAmount = existing.getSavingAmount();
-        long oldDate = existing.getSavingDate();
-        double overflow = validateMinimumAmount(incoming);
-        reconcileTrackerUpdate(existing, incoming, overflow);
+        validateMinimumAmount(incoming);
         existing.setMemberId(incoming.getMemberId());
         existing.setSavingAmount(incoming.getSavingAmount());
         existing.setSavingDate(incoming.getSavingDate());
@@ -131,20 +168,16 @@ public class SavingService {
         if (incoming.getStatus() != null) {
             existing.setStatus(incoming.getStatus());
         }
-        Saving saved = savingRepository.save(existing);
-        sweepOverflowToVoluntary(saved, overflow);
-        return saved;
+        return savingRepository.save(existing);
     }
 
     /**
-     * Deletes a non-POSTED saving (and any orphaned journal entries).
+     * Deletes a non-POSTED saving (and any orphaned journal entries). Such
+     * records never touched the ledger or the mandatory tracker.
      */
     @Transactional
     public void deleteSaving(UUID id) {
         Saving saving = getSaving(id);
-        memberSavingPeriodService.reconcileDeletedSaving(
-                saving.getMemberId(), saving.getSavingType(),
-                saving.getSavingAmount(), saving.getSavingDate());
         SavingStatus status = SavingStatus.resolve(saving.getStatus());
         if (!status.canDelete()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -174,7 +207,7 @@ public class SavingService {
      *       cover the oldest unpaid month in order, with any surplus flagged for
      *       overflow to voluntary.</li>
      *   <li>Mandatory types when partial payments are enabled: amount must be
-     *       positive; the period row is updated and status recomputed.</li>
+     *       positive; the period row is updated/status recomputed on approval.</li>
      * </ul>
      * Returns the overflow amount (surplus above fully-covered months) when
      * overflow-to-voluntary is enabled, or 0 otherwise.
@@ -312,26 +345,6 @@ public class SavingService {
                 mandatoryPortion, saving.getSavingDate());
     }
 
-    /** Adjusts the period row when an existing saving is updated. */
-    private void reconcileTrackerUpdate(Saving oldSaving, Saving incoming, double overflow) {
-        if (incoming.getSavingType() == null) return;
-        SavingType type = savingTypeRepository.findById(incoming.getSavingType()).orElse(null);
-        if (type == null || !type.getIsMandatory()) return;
-        if (!oldSaving.getSavingType().equals(incoming.getSavingType())
-                || !oldSaving.getSavingDate().equals(incoming.getSavingDate())) {
-            double mandatoryPortion = incoming.getSavingAmount() - Math.max(0, overflow);
-            memberSavingPeriodService.reconcileUpdatedSaving(
-                    oldSaving.getMemberId(), incoming.getSavingType(),
-                    oldSaving.getSavingAmount(), oldSaving.getSavingDate(),
-                    mandatoryPortion, incoming.getSavingDate());
-            return;
-        }
-        double mandatoryPortion = incoming.getSavingAmount() - Math.max(0, overflow);
-        memberSavingPeriodService.reconcileNewSaving(
-                incoming.getMemberId(), incoming.getSavingType(),
-                mandatoryPortion, incoming.getSavingDate());
-    }
-
     /** If overflow > 0 and overflow-to-voluntary is enabled, auto-creates a
      * voluntary saving record so total money is conserved. */
     private void sweepOverflowToVoluntary(Saving saved, double overflow) {
@@ -360,6 +373,23 @@ public class SavingService {
         journalEntryService.recordCreditEntry(
                 type.getAccountId(), volSaving.getId(), volSaving.getFtp(),
                 volSaving.getSavingDate(), "Voluntary saving (overflow)", volSaving.getSavingAmount());
+    }
+
+    /** Removes the auto-created overflow voluntary saving for a reversed
+     * mandatory saving (record + its ledger entries). Returns the overflow
+     * amount that was swept, or 0 when there is none. */
+    private double reverseOverflowToVoluntary(Saving saved) {
+        if (saved.getId() == null) return 0;
+        String prefix = "Overflow from mandatory saving " + saved.getId();
+        Optional<Saving> overflow = savingRepository.findAll().stream()
+                .filter(s -> s.getRemark() != null && s.getRemark().startsWith(prefix))
+                .findFirst();
+        if (overflow.isEmpty()) return 0;
+        Saving vol = overflow.get();
+        double amount = vol.getSavingAmount() != null ? vol.getSavingAmount() : 0;
+        journalEntryService.deleteEntriesByTargetId(vol.getId());
+        savingRepository.delete(vol);
+        return amount;
     }
 
     // ---------------------------------------------------------------- ledger

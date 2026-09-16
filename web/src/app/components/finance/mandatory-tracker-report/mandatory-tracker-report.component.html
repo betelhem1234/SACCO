@@ -1,0 +1,325 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#8b5cf6,#5b21b6)">
+      <span class="material-icons text-white" style="font-size:20px">calendar_month</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Mandatory Tracker Report</h1>
+      <p class="text-xs" style="color:#64748b">{{ report.savingTypeName }} · {{ report.year }}</p>
+    </div>
+    <mat-button-toggle-group [value]="view" (change)="setView($event.value)" class="rounded-xl overflow-hidden">
+      <mat-button-toggle *ngFor="let v of viewOptions" [value]="v.id" class="!text-xs">
+        <span class="material-icons mr-1" style="font-size:16px">{{ v.icon }}</span>{{ v.label }}
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+    <mat-form-field appearance="outline" class="min-w-[150px]" subscriptSizing="dynamic">
+      <mat-label>Year</mat-label>
+      <mat-select [ngModel]="year" (selectionChange)="onYearChange($event.value)">
+        <mat-option *ngFor="let y of years" [value]="y">{{ y }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#8b5cf6,#5b21b6)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <!-- Table view -->
+  <ng-container *ngIf="view === 'TABLE'">
+  <!-- Summary cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Members</p>
+      <p class="text-xl font-extrabold" style="color:#1e3a5f">{{ num(report.totalMembers, 0) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Required ({{ report.year }})</p>
+      <p class="text-xl font-extrabold" style="color:#b45309">{{ etb(report.totalRequired) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Collected</p>
+      <p class="text-xl font-extrabold" style="color:#065f46">{{ etb(report.totalPaid) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Arrears</p>
+      <p class="text-xl font-extrabold" style="color:#dc2626">{{ etb(report.totalArrears) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Collection rate</p>
+      <p class="text-xl font-extrabold" style="color:#1e40af">{{ num(collectionRate(report), 1) }}%</p>
+    </div>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Members:
+    <span class="font-semibold" style="color:#065f46">{{ summaryCount(report).paid }}</span> fully paid ·
+    <span class="font-semibold" style="color:#b45309">{{ summaryCount(report).partial }}</span> partial ·
+    <span class="font-semibold" style="color:#dc2626">{{ summaryCount(report).unpaid }}</span> in arrears
+  </p>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <div class="xl:col-span-2 space-y-5">
+      <!-- Member matrix -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#8b5cf6"></span>
+            Member Matrix — Paid / Required by Month
+          </h2>
+          <span class="fin-section-badge" style="background:#ede9fe;color:#5b21b6">{{ report.members.length }} member(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table tracker-matrix">
+            <thead>
+              <tr>
+                <th class="tracker-sticky">Member</th>
+                <th class="tracker-month" *ngFor="let m of months" [matTooltip]="monthNames[m - 1]">{{ monthNames[m - 1] }}</th>
+                <th class="fin-text-right">Required</th>
+                <th class="fin-text-right">Paid</th>
+                <th class="fin-text-right">Arrears</th>
+                <th class="fin-text-right">Paid mo.</th>
+                <th class="fin-text-right">Partial</th>
+                <th class="fin-text-right">Unpaid</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of report.members">
+                <td class="tracker-sticky">
+                  <span class="font-medium" style="color:#1e293b">{{ row.memberName }}</span>
+                  <span class="text-xs block" style="color:#94a3b8">{{ row.memberNumber }}</span>
+                </td>
+                <td *ngFor="let m of months" class="tracker-cell" [class]="cellClass(monthCell(row, m))" [matTooltip]="cellTitle(monthCell(row, m))" matTooltipPosition="above">
+                  {{ cellText(monthCell(row, m)) }}
+                </td>
+                <td class="fin-numeric" style="color:#475569">{{ etb(row.requiredTotal) }}</td>
+                <td class="fin-numeric font-semibold" style="color:#065f46">{{ etb(row.paidTotal) }}</td>
+                <td class="fin-numeric font-semibold" [style.color]="row.arrearsTotal > 0 ? '#dc2626' : '#065f46'">{{ etb(row.arrearsTotal) }}</td>
+                <td class="fin-numeric" style="color:#065f46">{{ num(row.fullyPaidMonths, 0) }}</td>
+                <td class="fin-numeric" style="color:#b45309">{{ num(row.partialMonths, 0) }}</td>
+                <td class="fin-numeric" style="color:#dc2626">{{ num(row.unpaidMonths, 0) }}</td>
+              </tr>
+            </tbody>
+            <tbody *ngIf="report.members.length === 0">
+              <tr>
+                <td [attr.colspan]="monthNames.length + 7" class="text-center py-8" style="color:#94a3b8">
+                  No mandatory saving obligations recorded for {{ report.year }}.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Month totals -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#f59e0b"></span>
+            Month Totals
+          </h2>
+          <span class="fin-section-badge" style="background:#fef3c7;color:#92400e">{{ report.months.length }} month(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th class="fin-text-right">Members</th>
+                <th class="fin-text-right">Fully paid</th>
+                <th class="fin-text-right">Partial</th>
+                <th class="fin-text-right">In arrears</th>
+                <th class="fin-text-right">Required</th>
+                <th class="fin-text-right">Collected</th>
+                <th class="fin-text-right">Remaining</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mo of report.months">
+                <td class="font-semibold" style="color:#1e293b">{{ mo.label }}</td>
+                <td class="fin-numeric" style="color:#475569">{{ num(mo.memberCount, 0) }}</td>
+                <td class="fin-numeric" style="color:#065f46">{{ num(mo.paidCount, 0) }}</td>
+                <td class="fin-numeric" style="color:#b45309">{{ num(mo.partialCount, 0) }}</td>
+                <td class="fin-numeric" style="color:#dc2626">{{ num(mo.unpaidCount, 0) }}</td>
+                <td class="fin-numeric" style="color:#475569">{{ etb(mo.required) }}</td>
+                <td class="fin-numeric font-semibold" style="color:#065f46">{{ etb(mo.paid) }}</td>
+                <td class="fin-numeric font-semibold" [style.color]="mo.remaining > 0 ? '#dc2626' : '#065f46'">{{ etb(mo.remaining) }}</td>
+              </tr>
+            </tbody>
+            <tfoot *ngIf="report.months.length > 0">
+              <tr class="fin-total-row">
+                <td class="font-bold">Total</td>
+                <td class="fin-numeric">—</td>
+                <td class="fin-numeric">{{ num(sumMonth(report, 'paidCount'), 0) }}</td>
+                <td class="fin-numeric">{{ num(sumMonth(report, 'partialCount'), 0) }}</td>
+                <td class="fin-numeric">{{ num(sumMonth(report, 'unpaidCount'), 0) }}</td>
+                <td class="fin-numeric">{{ etb(report.totalRequired) }}</td>
+                <td class="fin-numeric">{{ etb(report.totalPaid) }}</td>
+                <td class="fin-numeric">{{ etb(report.totalArrears) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary sidebar -->
+    <div class="space-y-5">
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Collection status</h3>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Fully paid members</dt>
+            <dd class="font-semibold" style="color:#065f46">{{ num(summaryCount(report).paid, 0) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Partial members</dt>
+            <dd class="font-semibold" style="color:#b45309">{{ num(summaryCount(report).partial, 0) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Members in arrears</dt>
+            <dd class="font-semibold" style="color:#dc2626">{{ num(summaryCount(report).unpaid, 0) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Collection rate</dt>
+            <dd class="font-extrabold" style="color:#1e40af">{{ num(collectionRate(report), 1) }}%</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Legend</h3>
+        <ul class="space-y-2 text-xs" style="color:#475569">
+          <li class="flex items-center gap-2">
+            <span class="tracker-dot tracker-dot-paid"></span> Fully paid — collected the full monthly requirement
+          </li>
+          <li class="flex items-center gap-2">
+            <span class="tracker-dot tracker-dot-partial"></span> Partial — some amount collected below the requirement
+          </li>
+          <li class="flex items-center gap-2">
+            <span class="tracker-dot tracker-dot-unpaid"></span> In arrears — nothing collected
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  </ng-container>
+
+  <!-- Chart view -->
+  <ng-container *ngIf="view === 'CHART'">
+    <div *ngIf="chartsEmpty(report); else chartContent" class="fin-card p-10 text-center" style="color:#94a3b8">
+      <span class="material-icons" style="font-size:36px">insights</span>
+      <p class="mt-2 text-sm">No mandatory collections to chart for {{ report.year }}.<br>Switch to Table view or pick a different year.</p>
+    </div>
+    <ng-template #chartContent>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <!-- Monthly required vs collected -->
+        <div class="fin-card overflow-hidden xl:col-span-2">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#f59e0b"></span>
+              Monthly Required vs Collected ({{ report.year }})
+            </h2>
+            <span class="fin-section-badge" style="background:#fef3c7;color:#92400e">{{ report.months.length }} month(s)</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="monthBars(report) as bars">
+              <svg *ngIf="bars.length > 0" viewBox="0 0 640 260" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <rect *ngFor="let b of bars" [attr.x]="b.requiredX" [attr.y]="b.requiredY" [attr.width]="b.bw" [attr.height]="b.requiredH" rx="4" fill="#f59e0b">
+                  <title>{{ b.label }} · required {{ etb(b.required) }}</title>
+                </rect>
+                <rect *ngFor="let b of bars" [attr.x]="b.paidX" [attr.y]="b.paidY" [attr.width]="b.bw" [attr.height]="b.paidH" rx="4" fill="#10b981">
+                  <title>{{ b.label }} · collected {{ etb(b.paid) }}</title>
+                </rect>
+                <text *ngFor="let b of bars" [attr.x]="b.requiredX + b.bw / 2" [attr.y]="b.requiredY - 5" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">{{ num(b.required, 0) }}</text>
+                <text *ngFor="let b of bars" [attr.x]="b.paidX + b.bw / 2" [attr.y]="b.paidY - 5" text-anchor="middle" font-size="9" font-weight="600" fill="#065f46">{{ num(b.paid, 0) }}</text>
+                <text *ngFor="let b of bars" [attr.x]="b.paidX + 11" y="252" text-anchor="middle" font-size="9" fill="#64748b">{{ b.label }}</text>
+              </svg>
+              <div *ngIf="bars.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No monthly totals for {{ report.year }}.</div>
+              <div *ngIf="bars.length > 0" class="mt-2 flex items-center justify-center gap-6 text-xs" style="color:#475569">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#f59e0b"></span> Required</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#10b981"></span> Collected</span>
+                <span class="font-semibold" style="color:#1e293b">Rate {{ num(collectionRate(report), 1) }}%</span>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Compliance by member status -->
+        <div class="fin-card overflow-hidden">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+              Compliance by Member Status
+            </h2>
+            <span class="fin-section-badge" style="background:#d1fae5;color:#065f46">{{ report.totalMembers }} member(s)</span>
+          </div>
+          <div class="p-4">
+            <div class="flex flex-col items-center gap-4">
+              <svg viewBox="0 0 220 200" class="w-full max-w-[220px] h-auto">
+                <g transform="translate(110 100)">
+                  <circle r="70" fill="none" stroke="#e2e8f0" stroke-width="26"></circle>
+                  <circle *ngFor="let s of complianceSlices(report)" r="70" fill="none" [attr.stroke]="s.color" stroke-width="26"
+                          [attr.stroke-dasharray]="s.dash" [attr.transform]="'rotate(' + s.rotate + ')'">
+                    <title>{{ s.name }} · {{ num(s.value, 0) }} member(s)</title>
+                  </circle>
+                  <text x="0" y="-6" text-anchor="middle" font-size="11" fill="#64748b">Collected</text>
+                  <text x="0" y="15" text-anchor="middle" font-size="16" font-weight="700" fill="#1e293b">{{ num(collectionRate(report), 1) }}%</text>
+                </g>
+              </svg>
+              <div class="w-full space-y-1.5">
+                <div *ngFor="let s of complianceSlices(report)" class="flex items-center justify-between text-sm py-0.5">
+                  <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full inline-block" [style.background]="s.color"></span>
+                    <span style="color:#334155">{{ s.name }}</span>
+                  </span>
+                  <span class="font-semibold" style="color:#1e293b">{{ num(s.value, 0) }} <span class="text-xs" style="color:#94a3b8">({{ num(s.percent, 1) }}%)</span></span>
+                </div>
+                <div *ngIf="complianceSlices(report).length === 0" class="text-center py-6 text-sm" style="color:#94a3b8">No member obligations to break down.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top collectors -->
+        <div class="fin-card overflow-hidden">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#8b5cf6"></span>
+              Top Collectors ({{ report.year }})
+            </h2>
+            <span class="fin-section-badge" style="background:#ede9fe;color:#5b21b6">top {{ topCollectors(report).length }}</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="topCollectors(report) as tops">
+              <svg *ngIf="tops.length > 0" [attr.viewBox]="'0 0 620 ' + (30 + tops.length * 30)" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <text *ngFor="let t of tops" [attr.x]="4" [attr.y]="t.y + 11" font-size="10">
+                  <tspan fill="#334155" font-weight="600">{{ t.name }}</tspan>
+                  <tspan fill="#94a3b8"> · #{{ t.number }}</tspan>
+                </text>
+                <rect *ngFor="let t of tops" [attr.x]="t.x" [attr.y]="t.y" [attr.width]="t.w" [attr.height]="t.h" rx="4" fill="#8b5cf6">
+                  <title>{{ t.name }} · {{ etb(t.value) }} collected</title>
+                </rect>
+                <text *ngFor="let t of tops" [attr.x]="t.x + t.w + 6" [attr.y]="t.y + 12" font-size="10" font-weight="600" fill="#5b21b6">{{ t.display }}</text>
+              </svg>
+              <p *ngIf="tops.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No collector data for {{ report.year }}.</p>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ng-container>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <div *ngIf="loading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#64748b">Loading mandatory tracker report…</p>
+    </div>
+  </div>
+</ng-template>

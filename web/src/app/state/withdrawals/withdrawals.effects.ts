@@ -10,7 +10,8 @@ import {
     updateWithdrawal, updateWithdrawalSuccess, updateWithdrawalFailure,
     deleteWithdrawal, deleteWithdrawalSuccess, deleteWithdrawalFailure,
     approveWithdrawal, approveWithdrawalSuccess, approveWithdrawalFailure,
-    rejectWithdrawal, rejectWithdrawalSuccess, rejectWithdrawalFailure
+    rejectWithdrawal, rejectWithdrawalSuccess, rejectWithdrawalFailure,
+    disburseWithdrawal, disburseWithdrawalSuccess, disburseWithdrawalFailure
 } from './withdrawals.actions';
 
 @Injectable({ providedIn: 'root' })
@@ -86,7 +87,7 @@ export class WithdrawalsEffects {
             mergeMap(action =>
                 this.apiService.approveWithdrawal(action.id, action.approvedBy).pipe(
                     map((withdrawal: Withdrawal) => approveWithdrawalSuccess({ withdrawal })),
-                    tap(() => window.alert('Withdrawal approved and posted to ledger')),
+                    tap((result) => window.alert(result.withdrawal.status === 'APPROVED' ? 'Withdrawal approved and pending disbursement' : 'Withdrawal approved and posted to ledger')),
                     catchError(error => {
                         window.alert('Failed to approve withdrawal!');
                         return of(approveWithdrawalFailure({ error }));
@@ -106,6 +107,25 @@ export class WithdrawalsEffects {
                     catchError(error => {
                         window.alert('Failed to reject withdrawal!');
                         return of(rejectWithdrawalFailure({ error }));
+                    })
+                )
+            )
+        )
+    );
+
+    disburseWithdrawal$ = createEffect(() =>
+        this.actions$.pipe(
+            ofType(disburseWithdrawal),
+            mergeMap(action =>
+                this.apiService.disburseWithdrawal(action.id, {
+                    disbursedBy: action.disbursedBy,
+                    referenceNo: action.referenceNo
+                }).pipe(
+                    map((withdrawal: Withdrawal) => disburseWithdrawalSuccess({ withdrawal })),
+                    tap(() => window.alert('Withdrawal disbursed and posted to ledger')),
+                    catchError(error => {
+                        window.alert('Failed to disburse withdrawal!');
+                        return of(disburseWithdrawalFailure({ error }));
                     })
                 )
             )

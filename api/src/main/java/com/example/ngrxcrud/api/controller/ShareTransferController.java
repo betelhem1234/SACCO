@@ -1,6 +1,7 @@
 package com.example.ngrxcrud.api.controller;
 
 import com.example.ngrxcrud.api.model.SharePurchase;
+import com.example.ngrxcrud.api.model.ShareStatus;
 import com.example.ngrxcrud.api.model.ShareTransfer;
 import com.example.ngrxcrud.api.repository.SharePurchaseRepository;
 import com.example.ngrxcrud.api.repository.ShareTransferRepository;
@@ -41,7 +42,7 @@ public class ShareTransferController {
     public ShareTransfer update(@PathVariable UUID id, @RequestBody ShareTransfer transfer) {
         transfer.setId(id);
         if (transfer.getCreatedAt() == null) transfer.setCreatedAt(System.currentTimeMillis());
-        sharePurchaseRepository.findByTransferId(id).ifPresent(sharePurchaseRepository::delete);
+        sharePurchaseRepository.deleteAll(sharePurchaseRepository.findAllByTransferId(id));
         ShareTransfer saved = shareTransferRepository.save(transfer);
         recordShareEntries(saved);
         return saved;
@@ -50,7 +51,7 @@ public class ShareTransferController {
     @DeleteMapping("/{id}")
     @Transactional
     public void delete(@PathVariable UUID id) {
-        sharePurchaseRepository.findByTransferId(id).ifPresent(sharePurchaseRepository::delete);
+        sharePurchaseRepository.deleteAll(sharePurchaseRepository.findAllByTransferId(id));
         shareTransferRepository.deleteById(id);
     }
 
@@ -73,6 +74,7 @@ public class ShareTransferController {
         purchase.setTransferId(transfer.getId());
         purchase.setRemark(remark);
         purchase.setCreatedAt(System.currentTimeMillis());
+        purchase.setStatus(ShareStatus.POSTED);
         sharePurchaseRepository.save(purchase);
     }
 }

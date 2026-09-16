@@ -141,4 +141,64 @@ export class FinanceEffects {
       )
     )
   );
+
+  loadSavingsReport$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(FinanceActions.loadSavingsReport),
+      mergeMap(({ from, to }) =>
+        this.apiService.getSavingsReport(from, to).pipe(
+          map((report) => FinanceActions.loadSavingsReportSuccess({ report })),
+          catchError((error) => of(FinanceActions.loadSavingsReportFailure({ error })))
+        )
+      )
+    )
+  );
+
+  loadMandatoryTrackerReport$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(FinanceActions.loadMandatoryTrackerReport),
+      mergeMap(({ params }) =>
+        this.apiService.getMandatoryTrackerReport(params.year).pipe(
+          map((report) => FinanceActions.loadMandatoryTrackerReportSuccess({ report })),
+          catchError((error) => of(FinanceActions.loadMandatoryTrackerReportFailure({ error })))
+        )
+      )
+    )
+  );
+
+  loadSharePurchaseReport$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(FinanceActions.loadSharePurchaseReport),
+      mergeMap(({ from, to }) =>
+        this.apiService.getSharePurchaseReport(from, to).pipe(
+          map((report) => FinanceActions.loadSharePurchaseReportSuccess({ report })),
+          catchError((error) => of(FinanceActions.loadSharePurchaseReportFailure({ error })))
+        )
+      )
+    )
+  );
+
+  loadWithdrawalReport$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(FinanceActions.loadWithdrawalReport),
+      mergeMap(({ from, to }) =>
+        this.apiService.getWithdrawalReport(from, to).pipe(
+          map((report) => FinanceActions.loadWithdrawalReportSuccess({ report })),
+          catchError((error) => of(FinanceActions.loadWithdrawalReportFailure({ error })))
+        )
+      )
+    )
+  );
+
+  loadTransferReport$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(FinanceActions.loadTransferReport),
+      mergeMap(({ from, to }) =>
+        this.apiService.getTransferReport(from, to).pipe(
+          map((report) => FinanceActions.loadTransferReportSuccess({ report })),
+          catchError((error) => of(FinanceActions.loadTransferReportFailure({ error })))
+        )
+      )
+    )
+  );
 }

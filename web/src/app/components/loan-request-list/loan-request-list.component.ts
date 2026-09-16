@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatChipsModule } from '@angular/material/chips';
 
@@ -34,6 +35,7 @@ export interface EnrichedLoanRequest extends LoanRequest {
     MatIconModule,
     MatTableModule,
     MatPaginatorModule,
+    MatSortModule,
     MatDialogModule,
     MatChipsModule
   ],
@@ -48,6 +50,7 @@ export class LoanRequestListComponent implements OnInit, AfterViewInit {
   displayedColumns: string[] = ['date', 'member', 'loanType', 'amount', 'months', 'status', 'actions'];
   dataSource = new MatTableDataSource<EnrichedLoanRequest>();
   @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
 
   constructor(private store: Store<AppState>, private dialog: MatDialog) { }
 
@@ -72,11 +75,13 @@ export class LoanRequestListComponent implements OnInit, AfterViewInit {
       // Sort by createdAt descending
       this.dataSource.data = [...(reqs ?? [])].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       this.dataSource.paginator = this.paginator;
+      this.dataSource.sort = this.sort;
     });
   }
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort;
   }
 
   onAdd() {

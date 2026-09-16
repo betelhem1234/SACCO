@@ -130,8 +130,26 @@ public class DataSeeder {
                 settingRepository.save(new Setting(null, "withdrawal_interval_days", "15", null));
                 settingRepository.save(new Setting(null, "withdrawal_limit", "10000", null));
                 settingRepository.save(new Setting(null, "withdrawal_requires_approval", "true", null));
+                settingRepository.save(new Setting(null, "withdrawal_requires_disbursement", "false", null));
                 System.out.println("Seeded settings");
             }
+
+            // Ensure any newer safe defaults exist even when the settings table was
+            // already populated from an earlier seed.
+            ensureSetting(settingRepository, "withdrawal_requires_disbursement", "false");
+            ensureSetting(settingRepository, "transfer_requires_approval", "true");
+            ensureSetting(settingRepository, "transfer_requires_service_fee", "false");
+            ensureSetting(settingRepository, "transfer_service_fee_flat", "0");
+            ensureSetting(settingRepository, "transfer_service_fee_percentage", "0");
+            ensureSetting(settingRepository, "transfer_fee_payment_stage", "SAME_TIME");
         };
+    }
+
+    private static void ensureSetting(SettingRepository settingRepository,
+                                      String key, String value) {
+        if (settingRepository.findByKey(key).isEmpty()) {
+            settingRepository.save(new Setting(null, key, value, null));
+            System.out.println("Seeded setting " + key);
+        }
     }
 }

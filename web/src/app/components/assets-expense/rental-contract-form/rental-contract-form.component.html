@@ -1,0 +1,57 @@
+<div>
+  <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#1e3a5f,#2d5282)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">apartment</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">{{ editMode ? 'Edit Rental Contract' : 'New Rental Contract' }}</h2>
+      <p class="text-xs m-0" style="color:#93c5fd">Daily / monthly / yearly rent payments</p>
+    </div>
+  </div>
+  <mat-dialog-content class="px-6 py-5">
+    <form [formGroup]="form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <mat-form-field appearance="outline" class="w-full col-span-2">
+        <mat-label>Property Name</mat-label>
+        <input matInput formControlName="propertyName" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Landlord</mat-label>
+        <input matInput formControlName="landlord" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Frequency</mat-label>
+        <mat-select formControlName="frequency">
+          <mat-option *ngFor="let f of frequencies" [value]="f.value">{{ f.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Amount per period</mat-label>
+        <input matInput formControlName="amountPerPeriod" type="number" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Advance periods paid up-front</mat-label>
+        <input matInput formControlName="advancePeriods" type="number" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Start Date</mat-label>
+        <input matInput formControlName="startDate" type="date" required />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>End Date</mat-label>
+        <input matInput formControlName="endDate" type="date" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full col-span-2">
+        <mat-label>Description</mat-label>
+        <textarea matInput formControlName="description" rows="2"></textarea>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0;margin-top:auto">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button [disabled]="!form.valid" (click)="submit()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:linear-gradient(135deg,#1e3a5f,#2d5282);color:white;box-shadow:0 4px 12px rgba(30,58,95,0.3)">
+      {{ editMode ? 'Update Contract' : 'Save Contract' }}
+    </button>
+  </mat-dialog-actions>
+</div>

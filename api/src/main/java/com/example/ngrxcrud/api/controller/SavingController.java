@@ -52,6 +52,15 @@ public class SavingController {
         return savingService.rejectSaving(id);
     }
 
+    /**
+     * Reverse a POSTED saving back to PENDING. Removes the ledger entries
+     * and tracker contribution so the record can be corrected or rejected.
+     */
+    @PostMapping("/{id}/reverse")
+    public Saving reverseSaving(@PathVariable UUID id) {
+        return savingService.reverseSaving(id);
+    }
+
     @PutMapping("/{id}")
     public Saving updateSaving(@PathVariable UUID id, @RequestBody Saving incoming) {
         return savingService.updateSaving(id, incoming);

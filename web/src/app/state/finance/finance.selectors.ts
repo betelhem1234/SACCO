@@ -79,6 +79,56 @@ export const selectWeeklyReport = createSelector(
   (state: FinanceState) => state?.weeklyReport ?? null
 );
 
+export const selectSavingsReport = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.savingsReport ?? null
+);
+
+export const selectSavingsReportLoading = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.loadingSavingsReport ?? false
+);
+
+export const selectMandatoryTrackerReport = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.mandatoryTrackerReport ?? null
+);
+
+export const selectMandatoryTrackerReportLoading = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.loadingMandatoryTrackerReport ?? false
+);
+
+export const selectSharePurchaseReport = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.sharePurchaseReport ?? null
+);
+
+export const selectSharePurchaseReportLoading = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.loadingSharePurchaseReport ?? false
+);
+
+export const selectWithdrawalReport = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.withdrawalReport ?? null
+);
+
+export const selectWithdrawalReportLoading = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.loadingWithdrawalReport ?? false
+);
+
+export const selectTransferReport = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.transferReport ?? null
+);
+
+export const selectTransferReportLoading = createSelector(
+  selectFinanceState,
+  (state: FinanceState) => state?.loadingTransferReport ?? false
+);
+
 export const selectMonthlyReportLoading = createSelector(
   selectFinanceState,
   (state: FinanceState) => state?.loadingMonthlyReport ?? false

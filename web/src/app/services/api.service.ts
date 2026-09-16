@@ -5,7 +5,8 @@ import {
   Member, Saving, Account, SavingType, SavingTypeAmountHistory, Withdrawal, SharedLoanType, LoanRequest, Loan, LoanSchedule, DisburseRequest, RepaymentRequest, DueAmountResponse, MemberSummaryPartialList, ShareSubscription, SharePurchase, ShareTransfer, MemberGroup, Transfer, AccountClassification,
   TrialBalanceReport, IncomeStatementReport, BalanceSheetReport, CashFlowReport, GeneralLedgerReport, RetainedEarningsReport, FinanceSummaryReport,
   MonthlyFinanceReport, WeeklyFinanceReport, StatementOfChangesInEquityReport, CashFlowStatementReport,
-  ReportDetail, PeriodDetailParams,
+  ReportDetail, PeriodDetailParams, SavingsReport, MandatoryTrackerReport, SharePurchaseReport, WithdrawalReport, TransferReport,
+  ExpenseRequest, FixedAsset, DepreciationEntry, AssetDisposal, RentalContract, RentalPayment,
 } from '@sacco/shared-models';
 
 @Injectable({
@@ -222,6 +223,10 @@ export class ApiService {
         return this.http.post<Saving>(`${this.apiUrl}/savings/${id}/reject`, {});
     }
 
+    reverseSaving(id: string): Observable<Saving> {
+        return this.http.post<Saving>(`${this.apiUrl}/savings/${id}/reverse`, {});
+    }
+
     // Accounts
     getAccounts(accountType?: number, accountCategory?: number): Observable<Account[]> {
         let params = new HttpParams();
@@ -265,6 +270,10 @@ export class ApiService {
 
     rejectWithdrawal(id: string): Observable<Withdrawal> {
         return this.http.post<Withdrawal>(`${this.apiUrl}/withdrawals/${id}/reject`, {});
+    }
+
+    disburseWithdrawal(id: string, payload?: { disbursedBy?: string; referenceNo?: string }): Observable<Withdrawal> {
+        return this.http.post<Withdrawal>(`${this.apiUrl}/withdrawals/${id}/disburse`, payload || {});
     }
 
     // Loan Types
@@ -335,6 +344,18 @@ export class ApiService {
         return this.http.delete<void>(`${this.apiUrl}/shares/subscriptions/${id}`);
     }
 
+    approveShareSubscription(id: string, approvedBy?: string): Observable<ShareSubscription> {
+        return this.http.post<ShareSubscription>(`${this.apiUrl}/shares/subscriptions/${id}/approve`, { approvedBy });
+    }
+
+    rejectShareSubscription(id: string): Observable<ShareSubscription> {
+        return this.http.post<ShareSubscription>(`${this.apiUrl}/shares/subscriptions/${id}/reject`, {});
+    }
+
+    reverseShareSubscription(id: string): Observable<ShareSubscription> {
+        return this.http.post<ShareSubscription>(`${this.apiUrl}/shares/subscriptions/${id}/reverse`, {});
+    }
+
     // Share Purchases
     getSharePurchases(): Observable<SharePurchase[]> {
         return this.http.get<SharePurchase[]>(`${this.apiUrl}/shares/purchases`);
@@ -352,6 +373,18 @@ export class ApiService {
         return this.http.delete<void>(`${this.apiUrl}/shares/purchases/${id}`);
     }
 
+    approveSharePurchase(id: string, approvedBy?: string): Observable<SharePurchase> {
+        return this.http.post<SharePurchase>(`${this.apiUrl}/shares/purchases/${id}/approve`, { approvedBy });
+    }
+
+    rejectSharePurchase(id: string): Observable<SharePurchase> {
+        return this.http.post<SharePurchase>(`${this.apiUrl}/shares/purchases/${id}/reject`, {});
+    }
+
+    reverseSharePurchase(id: string): Observable<SharePurchase> {
+        return this.http.post<SharePurchase>(`${this.apiUrl}/shares/purchases/${id}/reverse`, {});
+    }
+
     // Transfers
     getTransfers(): Observable<Transfer[]> {
         return this.http.get<Transfer[]>(`${this.apiUrl}/transfers`);
@@ -367,6 +400,22 @@ export class ApiService {
 
     deleteTransfer(id: string): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/transfers/${id}`);
+    }
+
+    approveTransfer(id: string, approvedBy?: string): Observable<Transfer> {
+        return this.http.post<Transfer>(`${this.apiUrl}/transfers/${id}/approve`, { approvedBy });
+    }
+
+    rejectTransfer(id: string): Observable<Transfer> {
+        return this.http.post<Transfer>(`${this.apiUrl}/transfers/${id}/reject`, {});
+    }
+
+    executeTransfer(id: string, executedBy?: string): Observable<Transfer> {
+        return this.http.post<Transfer>(`${this.apiUrl}/transfers/${id}/execute`, { executedBy });
+    }
+
+    payTransferFee(id: string, payload?: { feePaidBy?: string; feeReference?: string }): Observable<Transfer> {
+        return this.http.post<Transfer>(`${this.apiUrl}/transfers/${id}/pay-fee`, payload || {});
     }
 
     // Share Transfers
@@ -462,6 +511,27 @@ export class ApiService {
         return this.http.get<ReportDetail>(`${this.apiUrl}/finance/period-detail`, { params: p });
     }
 
+    getSavingsReport(from?: number | null, to?: number | null): Observable<SavingsReport> {
+        return this.http.get<SavingsReport>(`${this.apiUrl}/finance/savings-report`, { params: this.financeParams(from, to) });
+    }
+
+    getMandatoryTrackerReport(year: number): Observable<MandatoryTrackerReport> {
+        let params = new HttpParams().set('year', String(year));
+        return this.http.get<MandatoryTrackerReport>(`${this.apiUrl}/finance/mandatory-tracker-report`, { params });
+    }
+
+    getSharePurchaseReport(from?: number | null, to?: number | null): Observable<SharePurchaseReport> {
+        return this.http.get<SharePurchaseReport>(`${this.apiUrl}/finance/share-purchase-report`, { params: this.financeParams(from, to) });
+    }
+
+    getWithdrawalReport(from?: number | null, to?: number | null): Observable<WithdrawalReport> {
+        return this.http.get<WithdrawalReport>(`${this.apiUrl}/finance/withdrawal-report`, { params: this.financeParams(from, to) });
+    }
+
+    getTransferReport(from?: number | null, to?: number | null): Observable<TransferReport> {
+        return this.http.get<TransferReport>(`${this.apiUrl}/finance/transfer-report`, { params: this.financeParams(from, to) });
+    }
+
     // Account Classifications
     getAccountClassifications(): Observable<AccountClassification[]> {
         return this.http.get<AccountClassification[]>(`${this.apiUrl}/account-classifications`);
@@ -477,5 +547,102 @@ export class ApiService {
 
     deleteAccountClassification(id: string): Observable<void> {
         return this.http.delete<void>(`${this.apiUrl}/account-classifications/${id}`);
+    }
+
+    // Assets & Expenses
+    getExpenseRequests(): Observable<ExpenseRequest[]> {
+        return this.http.get<ExpenseRequest[]>(`${this.apiUrl}/assets-expenses/requests`);
+    }
+
+    createExpenseRequest(request: ExpenseRequest): Observable<ExpenseRequest> {
+        return this.http.post<ExpenseRequest>(`${this.apiUrl}/assets-expenses/requests`, request);
+    }
+
+    updateExpenseRequest(id: string, request: ExpenseRequest): Observable<ExpenseRequest> {
+        return this.http.put<ExpenseRequest>(`${this.apiUrl}/assets-expenses/requests/${id}`, request);
+    }
+
+    deleteExpenseRequest(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/assets-expenses/requests/${id}`);
+    }
+
+    approveExpenseRequest(id: string, approvedBy?: string): Observable<ExpenseRequest> {
+        return this.http.post<ExpenseRequest>(`${this.apiUrl}/assets-expenses/requests/${id}/approve`, { approvedBy });
+    }
+
+    rejectExpenseRequest(id: string): Observable<ExpenseRequest> {
+        return this.http.post<ExpenseRequest>(`${this.apiUrl}/assets-expenses/requests/${id}/reject`, {});
+    }
+
+    payExpenseRequest(id: string, paymentAccountId?: string, paidDate?: number): Observable<ExpenseRequest> {
+        return this.http.post<ExpenseRequest>(`${this.apiUrl}/assets-expenses/requests/${id}/pay`, { paymentAccountId, paidDate });
+    }
+
+    getFixedAssets(): Observable<FixedAsset[]> {
+        return this.http.get<FixedAsset[]>(`${this.apiUrl}/assets-expenses/assets`);
+    }
+
+    addFixedAsset(asset: FixedAsset): Observable<FixedAsset> {
+        return this.http.post<FixedAsset>(`${this.apiUrl}/assets-expenses/assets`, asset);
+    }
+
+    updateFixedAsset(id: string, asset: FixedAsset): Observable<FixedAsset> {
+        return this.http.put<FixedAsset>(`${this.apiUrl}/assets-expenses/assets/${id}`, asset);
+    }
+
+    deleteFixedAsset(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/assets-expenses/assets/${id}`);
+    }
+
+    runAssetDepreciation(id: string, asOf?: number): Observable<DepreciationEntry[]> {
+        return this.http.post<DepreciationEntry[]>(`${this.apiUrl}/assets-expenses/assets/${id}/depreciation`, { asOf });
+    }
+
+    runAllDepreciation(asOf?: number): Observable<DepreciationEntry[]> {
+        return this.http.post<DepreciationEntry[]>(`${this.apiUrl}/assets-expenses/assets/depreciation/run-all`, { asOf });
+    }
+
+    disposeAsset(id: string, disposal: AssetDisposal): Observable<AssetDisposal> {
+        return this.http.post<AssetDisposal>(`${this.apiUrl}/assets-expenses/assets/${id}/dispose`, disposal);
+    }
+
+    getDepreciationEntries(): Observable<DepreciationEntry[]> {
+        return this.http.get<DepreciationEntry[]>(`${this.apiUrl}/assets-expenses/depreciation`);
+    }
+
+    getAssetDisposals(): Observable<AssetDisposal[]> {
+        return this.http.get<AssetDisposal[]>(`${this.apiUrl}/assets-expenses/disposals`);
+    }
+
+    getRentalContracts(): Observable<RentalContract[]> {
+        return this.http.get<RentalContract[]>(`${this.apiUrl}/assets-expenses/rent-contracts`);
+    }
+
+    addRentalContract(contract: RentalContract): Observable<RentalContract> {
+        return this.http.post<RentalContract>(`${this.apiUrl}/assets-expenses/rent-contracts`, contract);
+    }
+
+    updateRentalContract(id: string, contract: RentalContract): Observable<RentalContract> {
+        return this.http.put<RentalContract>(`${this.apiUrl}/assets-expenses/rent-contracts/${id}`, contract);
+    }
+
+    deleteRentalContract(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/assets-expenses/rent-contracts/${id}`);
+    }
+
+    amortizeRentalContract(id: string): Observable<RentalPayment[]> {
+        return this.http.post<RentalPayment[]>(`${this.apiUrl}/assets-expenses/rent-contracts/${id}/amortize`, {});
+    }
+
+    getRentalPayments(): Observable<RentalPayment[]> {
+        return this.http.get<RentalPayment[]>(`${this.apiUrl}/assets-expenses/rent-payments`);
+    }
+
+    addRentalPayment(payment: RentalPayment): Observable<RentalPayment> {
+        return this.http.post<RentalPayment>(`${this.apiUrl}/assets-expenses/rent-payments`, payment);
+    }
+
+    deleteRentalPayment(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/assets-expenses/rent-payments/${id}`);
     }
 }

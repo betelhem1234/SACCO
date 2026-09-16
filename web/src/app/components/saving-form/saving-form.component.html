@@ -53,7 +53,7 @@
             <mat-icon matPrefix class="mr-2" style="color:#94a3b8">monetization_on</mat-icon>
             <mat-hint *ngIf="requiredMin">
               Minimum required for {{ requiredMin.typeName }}
-              on {{ requiredMin.date | date: 'dd MMM yyyy' }} is ETB {{ requiredMin.amount | number: '1.0-2' }}.
+              on {{ requiredMin.date | date }} is ETB {{ requiredMin.amount | number: '1.0-2' }}.
             </mat-hint>
             <mat-error *ngIf="savingForm.controls['savingAmount']?.errors?.['required']">Amount is required</mat-error>
             <mat-error *ngIf="savingForm.controls['savingAmount']?.errors?.['min']">

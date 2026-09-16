@@ -8,9 +8,12 @@ export interface Withdrawal {
     remark?: string;
     date: number;
     createdAt: number;
-    status?: 'PENDING' | 'POSTED' | 'REJECTED';
+    status?: 'PENDING' | 'APPROVED' | 'POSTED' | 'DISBURSED' | 'REJECTED';
     approvedBy?: string;
     approvedAt?: number;
+    disbursedBy?: string;
+    disbursedAt?: number;
+    disbursedReference?: string;
 }
 
-export type WithdrawalStatus = 'PENDING' | 'POSTED' | 'REJECTED';
+export type WithdrawalStatus = 'PENDING' | 'APPROVED' | 'POSTED' | 'DISBURSED' | 'REJECTED';

@@ -6,12 +6,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
 
 import { Saving, Member, SavingType } from '@sacco/shared-models';
 import { AppState } from '../../models/state.model';
-import { deleteSaving, approveSaving, rejectSaving } from '../../state/savings/savings.actions';
+import { deleteSaving, approveSaving, rejectSaving, reverseSaving } from '../../state/savings/savings.actions';
 import { selectAllSavings } from '../../state/savings/savings.selectors';
 import { selectAllMembers } from '../../state/members/members.selectors';
 import { selectAllAccounts, selectAllSavingTypes } from '../../state/lookups/lookups.selectors';
@@ -36,8 +38,10 @@ interface EnrichedSaving extends Saving {
     MatIconModule,
     MatTableModule,
     MatPaginatorModule,
+    MatSortModule,
     MatDialogModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatTabsModule
   ],
   templateUrl: './saving-list.component.html',
   styleUrls: ['./saving-list.component.css']
@@ -45,8 +49,12 @@ interface EnrichedSaving extends Saving {
 export class SavingListComponent implements OnInit, AfterViewInit {
   savings$!: Observable<EnrichedSaving[]>;
   displayedColumns: string[] = ['memberId', 'memberName', 'savingType', 'accountName', 'amount', 'ftp', 'date', 'status', 'actions'];
-  dataSource = new MatTableDataSource<EnrichedSaving>();
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  requestsDataSource = new MatTableDataSource<EnrichedSaving>();
+  postedDataSource = new MatTableDataSource<EnrichedSaving>();
+  @ViewChild('requestsPaginator', { static: false }) requestsPaginator!: MatPaginator;
+  @ViewChild('postedPaginator', { static: false }) postedPaginator!: MatPaginator;
+  @ViewChild('requestsSort', { static: false }) requestsSort!: MatSort;
+  @ViewChild('postedSort', { static: false }) postedSort!: MatSort;
 
   constructor(private store: Store<AppState>, private dialog: MatDialog) { }
 
@@ -77,13 +85,22 @@ export class SavingListComponent implements OnInit, AfterViewInit {
     );
 
     this.savings$.subscribe(savings => {
-      this.dataSource.data = savings;
-      this.dataSource.paginator = this.paginator;
+      const requests = (savings || []).filter(s => s.status === 'PENDING' || s.status === 'REJECTED');
+      const posted = (savings || []).filter(s => this.isPosted(s.status));
+      this.requestsDataSource.data = requests;
+      this.postedDataSource.data = posted;
+      this.requestsDataSource.paginator = this.requestsPaginator;
+      this.requestsDataSource.sort = this.requestsSort;
+      this.postedDataSource.paginator = this.postedPaginator;
+      this.postedDataSource.sort = this.postedSort;
     });
   }
 
   ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
+    this.requestsDataSource.paginator = this.requestsPaginator;
+    this.requestsDataSource.sort = this.requestsSort;
+    this.postedDataSource.paginator = this.postedPaginator;
+    this.postedDataSource.sort = this.postedSort;
   }
 
   getTypeBadgeStyle(typeId: string): Record<string, string> {
@@ -101,6 +118,10 @@ export class SavingListComponent implements OnInit, AfterViewInit {
     }
   }
 
+  isPosted(status?: string): boolean {
+    return !status || status === 'POSTED';
+  }
+
   onApprove(row: EnrichedSaving) {
     if (row.id && confirm(`Approve this saving for ${row.memberName} and post to ledger?`)) {
       this.store.dispatch(approveSaving({ id: row.id }));
@@ -110,6 +131,12 @@ export class SavingListComponent implements OnInit, AfterViewInit {
   onReject(row: EnrichedSaving) {
     if (row.id && confirm(`Reject this saving for ${row.memberName}?`)) {
       this.store.dispatch(rejectSaving({ id: row.id }));
+    }
+  }
+
+  onReverse(row: EnrichedSaving) {
+    if (row.id && confirm(`Reverse this saving for ${row.memberName} back to pending? This removes it from the ledger and tracker.`)) {
+      this.store.dispatch(reverseSaving({ id: row.id }));
     }
   }
 

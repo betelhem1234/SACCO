@@ -11,6 +11,11 @@ import {
   FinanceSummaryReport,
   MonthlyFinanceReport,
   WeeklyFinanceReport,
+  SavingsReport,
+  MandatoryTrackerReport,
+  SharePurchaseReport,
+  WithdrawalReport,
+  TransferReport,
 } from '@sacco/shared-models';
 import * as FinanceActions from './finance.actions';
 
@@ -28,6 +33,11 @@ export interface FinanceState {
   statementOfChangesInEquity: StatementOfChangesInEquityReport | null;
   monthlyReport: MonthlyFinanceReport | null;
   weeklyReport: WeeklyFinanceReport | null;
+  savingsReport: SavingsReport | null;
+  mandatoryTrackerReport: MandatoryTrackerReport | null;
+  sharePurchaseReport: SharePurchaseReport | null;
+  withdrawalReport: WithdrawalReport | null;
+  transferReport: TransferReport | null;
   loadingSummary: boolean;
   loadingTrialBalance: boolean;
   loadingIncomeStatement: boolean;
@@ -39,6 +49,11 @@ export interface FinanceState {
   loadingStatementOfChangesInEquity: boolean;
   loadingMonthlyReport: boolean;
   loadingWeeklyReport: boolean;
+  loadingSavingsReport: boolean;
+  loadingMandatoryTrackerReport: boolean;
+  loadingSharePurchaseReport: boolean;
+  loadingWithdrawalReport: boolean;
+  loadingTransferReport: boolean;
   error: any;
 }
 
@@ -56,6 +71,11 @@ export const initialFinanceState: FinanceState = {
   statementOfChangesInEquity: null,
   monthlyReport: null,
   weeklyReport: null,
+  savingsReport: null,
+  mandatoryTrackerReport: null,
+  sharePurchaseReport: null,
+  withdrawalReport: null,
+  transferReport: null,
   loadingSummary: false,
   loadingTrialBalance: false,
   loadingIncomeStatement: false,
@@ -67,6 +87,11 @@ export const initialFinanceState: FinanceState = {
   loadingStatementOfChangesInEquity: false,
   loadingMonthlyReport: false,
   loadingWeeklyReport: false,
+  loadingSavingsReport: false,
+  loadingMandatoryTrackerReport: false,
+  loadingSharePurchaseReport: false,
+  loadingWithdrawalReport: false,
+  loadingTransferReport: false,
   error: null,
 };
 
@@ -206,5 +231,65 @@ export const financeReducer = createReducer(
     ...state,
     error,
     loadingWeeklyReport: false,
+  })),
+
+  on(FinanceActions.loadSavingsReport, (state) => ({ ...state, loadingSavingsReport: true })),
+  on(FinanceActions.loadSavingsReportSuccess, (state, { report }) => ({
+    ...state,
+    savingsReport: report,
+    loadingSavingsReport: false,
+  })),
+  on(FinanceActions.loadSavingsReportFailure, (state, { error }) => ({
+    ...state,
+    error,
+    loadingSavingsReport: false,
+  })),
+
+  on(FinanceActions.loadMandatoryTrackerReport, (state) => ({ ...state, loadingMandatoryTrackerReport: true })),
+  on(FinanceActions.loadMandatoryTrackerReportSuccess, (state, { report }) => ({
+    ...state,
+    mandatoryTrackerReport: report,
+    loadingMandatoryTrackerReport: false,
+  })),
+  on(FinanceActions.loadMandatoryTrackerReportFailure, (state, { error }) => ({
+    ...state,
+    error,
+    loadingMandatoryTrackerReport: false,
+  })),
+
+  on(FinanceActions.loadSharePurchaseReport, (state) => ({ ...state, loadingSharePurchaseReport: true })),
+  on(FinanceActions.loadSharePurchaseReportSuccess, (state, { report }) => ({
+    ...state,
+    sharePurchaseReport: report,
+    loadingSharePurchaseReport: false,
+  })),
+  on(FinanceActions.loadSharePurchaseReportFailure, (state, { error }) => ({
+    ...state,
+    error,
+    loadingSharePurchaseReport: false,
+  })),
+
+  on(FinanceActions.loadWithdrawalReport, (state) => ({ ...state, loadingWithdrawalReport: true })),
+  on(FinanceActions.loadWithdrawalReportSuccess, (state, { report }) => ({
+    ...state,
+    withdrawalReport: report,
+    loadingWithdrawalReport: false,
+  })),
+  on(FinanceActions.loadWithdrawalReportFailure, (state, { error }) => ({
+    ...state,
+    error,
+    loadingWithdrawalReport: false,
+  })),
+
+  on(FinanceActions.loadTransferReport, (state) => ({ ...state, loadingTransferReport: true })),
+  on(FinanceActions.loadTransferReportSuccess, (state, { report }) => ({
+    ...state,
+    transferReport: report,
+    loadingTransferReport: false,
+  })),
+  on(FinanceActions.loadTransferReportFailure, (state, { error }) => ({
+    ...state,
+    error,
+    loadingTransferReport: false,
   }))
 );

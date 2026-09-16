@@ -4,10 +4,11 @@ import com.example.ngrxcrud.api.model.SharePurchase;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface SharePurchaseRepository extends JpaRepository<SharePurchase, UUID> {
-    Optional<SharePurchase> findByTransferId(UUID transferId);
+    List<SharePurchase> findAllByTransferId(UUID transferId);
 }

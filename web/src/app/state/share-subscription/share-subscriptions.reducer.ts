@@ -4,7 +4,10 @@ import {
     loadShareSubscriptions, loadShareSubscriptionsSuccess, loadShareSubscriptionsFailure,
     addShareSubscription, addShareSubscriptionSuccess, addShareSubscriptionFailure,
     updateShareSubscription, updateShareSubscriptionSuccess, updateShareSubscriptionFailure,
-    deleteShareSubscription, deleteShareSubscriptionSuccess, deleteShareSubscriptionFailure
+    deleteShareSubscription, deleteShareSubscriptionSuccess, deleteShareSubscriptionFailure,
+    approveShareSubscription, approveShareSubscriptionSuccess, approveShareSubscriptionFailure,
+    rejectShareSubscription, rejectShareSubscriptionSuccess, rejectShareSubscriptionFailure,
+    reverseShareSubscription, reverseShareSubscriptionSuccess, reverseShareSubscriptionFailure
 } from './share-subscriptions.actions';
 
 export interface ShareSubscriptionState {
@@ -47,5 +50,29 @@ export const shareSubscriptionReducer = createReducer(
         shareSubscriptions: state.shareSubscriptions.filter(s => s.id !== id),
         status: 'success' as const
     })),
-    on(deleteShareSubscriptionFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
+    on(deleteShareSubscriptionFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(approveShareSubscription, (state) => ({ ...state, status: 'loading' as const })),
+    on(approveShareSubscriptionSuccess, (state, { shareSubscription }) => ({
+        ...state,
+        shareSubscriptions: state.shareSubscriptions.map(s => s.id === shareSubscription.id ? { ...shareSubscription, status: 'POSTED' as const } : s),
+        status: 'success' as const
+    })),
+    on(approveShareSubscriptionFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(rejectShareSubscription, (state) => ({ ...state, status: 'loading' as const })),
+    on(rejectShareSubscriptionSuccess, (state, { shareSubscription }) => ({
+        ...state,
+        shareSubscriptions: state.shareSubscriptions.map(s => s.id === shareSubscription.id ? { ...shareSubscription, status: 'REJECTED' as const } : s),
+        status: 'success' as const
+    })),
+    on(rejectShareSubscriptionFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const })),
+
+    on(reverseShareSubscription, (state) => ({ ...state, status: 'loading' as const })),
+    on(reverseShareSubscriptionSuccess, (state, { shareSubscription }) => ({
+        ...state,
+        shareSubscriptions: state.shareSubscriptions.map(s => s.id === shareSubscription.id ? { ...shareSubscription, status: 'PENDING' as const } : s),
+        status: 'success' as const
+    })),
+    on(reverseShareSubscriptionFailure, (state, { error }) => ({ ...state, errorMessage: error, status: 'error' as const }))
 );

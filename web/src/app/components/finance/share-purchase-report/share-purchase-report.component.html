@@ -1,0 +1,441 @@
+<div class="fin-page" *ngIf="report$ | async as report; else loadingOrEmpty">
+  <!-- Toolbar -->
+  <div class="fin-toolbar mb-6 no-print">
+    <button mat-icon-button matTooltip="Back" (click)="back()" class="w-10 h-10 rounded-xl" style="color:#1e3a5f">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#10b981,#065f46)">
+      <span class="material-icons text-white" style="font-size:20px">precision_manufacturing</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-xl font-bold" style="color:#1e293b">Share Purchase Report</h1>
+      <p class="text-xs" style="color:#64748b">{{ periodLabel(presetId) }} · {{ report.byMember.length }} member rows · {{ report.transactionCount }} purchases · {{ report.subscriptionCount }} subscriptions</p>
+    </div>
+    <mat-button-toggle-group [value]="view" (change)="setView($event.value)" class="rounded-xl overflow-hidden">
+      <mat-button-toggle *ngFor="let v of viewOptions" [value]="v.id" class="!text-xs">
+        <span class="material-icons mr-1" style="font-size:16px">{{ v.icon }}</span>{{ v.label }}
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+    <mat-form-field appearance="outline" class="min-w-[190px]" subscriptSizing="dynamic">
+      <mat-label>Period</mat-label>
+      <mat-select [(ngModel)]="presetId" (selectionChange)="onPeriodChange($event.value)">
+        <mat-option *ngFor="let p of presets" [value]="p.id">{{ p.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="print()" class="rounded-xl"
+            style="background:linear-gradient(135deg,#10b981,#065f46)">
+      <span class="material-icons mr-1" style="font-size:18px">print</span> Print
+    </button>
+  </div>
+
+  <p class="text-xs mb-4" style="color:#64748b">
+    Reporting window:
+    <span class="font-semibold" style="color:#1e293b">{{ windowLabel(report.from, report.to) }}</span>
+  </p>
+
+<!-- Table view -->
+  <ng-container *ngIf="view === 'TABLE'">
+  <!-- Summary strip -->
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Subscribed</p>
+      <p class="text-xl font-extrabold" style="color:#4338ca">{{ etb(report.subscribedAmountTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">{{ num(report.subscribedUnitsTotal) }} unit(s) · {{ num(report.subscriptionCount, 0) }} subscription(s)</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Share purchases</p>
+      <p class="text-xl font-extrabold" style="color:#065f46">{{ etb(report.shareCapitalTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">{{ num(report.transactionCount, 0) }} purchase(s) · {{ num(report.unitsTotal) }} unit(s) · net of service fees</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Outstanding</p>
+      <p class="text-xl font-extrabold" [style.color]="report.outstandingAmountTotal === 0 ? '#065f46' : (report.outstandingAmountTotal > 0 ? '#b45309' : '#dc2626')">{{ etb(report.outstandingAmountTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">{{ num(report.outstandingUnitsTotal) }} unit(s) to pay</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Service fees</p>
+      <p class="text-xl font-extrabold" style="color:#b45309">{{ etb(report.serviceFeeTotal) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Cash received (bank)</p>
+      <p class="text-xl font-extrabold" style="color:#475569">{{ etb(report.ledgerDebitTotal) }}</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Ledger credit</p>
+      <p class="text-xl font-extrabold" style="color:#475569">{{ etb(report.ledgerCreditTotal) }}</p>
+      <p class="text-xs mt-1" style="color:#94a3b8">share + fee accounts</p>
+    </div>
+    <div class="fin-card p-4">
+      <p class="text-[0.68rem] font-bold uppercase tracking-wider mb-1" style="color:#64748b">Difference (record vs ledger)</p>
+      <p class="text-xl font-extrabold" [style.color]="report.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(report.difference) }}</p>
+    </div>
+  </div>
+
+  <!-- Capital position vs authorized capital -->
+  <div class="fin-card p-5 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+        <span class="w-2 h-2 rounded-full" style="background:#4338ca"></span>
+        Share Capital Position <span class="font-normal normal-case text-xs" style="color:#94a3b8">(all-time vs authorized)</span>
+      </h2>
+      <span class="fin-section-badge" style="background:#e0e7ff;color:#3730a3">Authorized {{ etb(capitalPosition(report).authorized) }}</span>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+      <div>
+        <p class="text-[0.68rem] font-bold uppercase tracking-wider" style="color:#64748b">Subscribed</p>
+        <p class="text-lg font-extrabold" style="color:#4338ca">{{ etb(capitalPosition(report).subscribed) }}</p>
+        <p class="text-xs" style="color:#94a3b8">issued</p>
+      </div>
+      <div>
+        <p class="text-[0.68rem] font-bold uppercase tracking-wider" style="color:#64748b">Purchased</p>
+        <p class="text-lg font-extrabold" style="color:#065f46">{{ etb(capitalPosition(report).purchased) }}</p>
+        <p class="text-xs" style="color:#94a3b8">{{ num(capitalPosition(report).paidPct, 1) }}% of subscribed</p>
+      </div>
+      <div>
+        <p class="text-[0.68rem] font-bold uppercase tracking-wider" style="color:#64748b">Outstanding</p>
+        <p class="text-lg font-extrabold" style="color:#b45309">{{ etb(capitalPosition(report).outstanding) }}</p>
+        <p class="text-xs" style="color:#94a3b8">unpaid subscriptions</p>
+      </div>
+      <div>
+        <p class="text-[0.68rem] font-bold uppercase tracking-wider" style="color:#64748b">Available</p>
+        <p class="text-lg font-extrabold" style="color:#1e40af">{{ etb(capitalPosition(report).available) }}</p>
+        <p class="text-xs" style="color:#94a3b8">capacity to issue</p>
+      </div>
+      <div>
+        <p class="text-[0.68rem] font-bold uppercase tracking-wider" style="color:#64748b">Utilization</p>
+        <p class="text-lg font-extrabold" style="color:#334155">{{ num(100 - capitalPosition(report).availablePct, 1) }}%</p>
+        <p class="text-xs" style="color:#94a3b8">of authorized</p>
+      </div>
+    </div>
+    <div class="mt-4 h-3 rounded-full overflow-hidden flex" style="background:#f1f5f9">
+      <div class="h-full" [style.width.%]="capitalPosition(report).purchasedPct" style="background:#10b981" [matTooltip]="'Purchased ' + etb(capitalPosition(report).purchased)"></div>
+      <div class="h-full" [style.width.%]="capitalPosition(report).outstandingPct" style="background:#f59e0b" [matTooltip]="'Outstanding ' + etb(capitalPosition(report).outstanding)"></div>
+      <div class="h-full" [style.width.%]="capitalPosition(report).availablePct" style="background:#cbd5e1" [matTooltip]="'Available ' + etb(capitalPosition(report).available)"></div>
+    </div>
+    <div class="mt-2 flex items-center justify-center gap-6 text-xs" style="color:#475569">
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#10b981"></span> Purchased</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#f59e0b"></span> Outstanding</span>
+      <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#cbd5e1"></span> Available</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+    <div class="xl:col-span-2 space-y-5">
+      <!-- By member -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+            Subscriptions &amp; Purchases by Member
+          </h2>
+          <span class="fin-section-badge" style="background:#d1fae5;color:#065f46">{{ report.byMember.length }} member(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th class="fin-text-right">Subscribed</th>
+                <th class="fin-text-right">Purchased</th>
+                <th class="fin-text-right">Outstanding</th>
+                <th class="fin-text-right">Ledger debit</th>
+                <th class="fin-text-right">Difference</th>
+              </tr>
+              <tr class="fin-subhead">
+                <th></th>
+                <th class="fin-text-right">units · amount</th>
+                <th class="fin-text-right">qty · units · amount</th>
+                <th class="fin-text-right">units · amount</th>
+                <th></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of report.byMember">
+                <td>
+                  <span class="font-medium" style="color:#1e293b">{{ r.memberName }}</span>
+                  <span class="text-xs ml-1" style="color:#94a3b8">{{ r.memberNumber }}</span>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  <span class="text-xs" style="color:#94a3b8">{{ num(r.subscribedUnits) }}</span>
+                  <span class="block font-semibold" style="color:#4338ca">{{ etb(r.subscribedAmount) }}</span>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  <span class="text-xs" style="color:#94a3b8">{{ num(r.count, 0) }}× · {{ num(r.units) }}</span>
+                  <span class="block font-semibold" style="color:#065f46">{{ etb(r.purchaseAmount) }}</span>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  <span class="text-xs" style="color:#94a3b8">{{ num(r.outstandingUnits) }}</span>
+                  <span class="block font-semibold" [style.color]="r.outstandingAmount === 0 ? '#065f46' : (r.outstandingAmount > 0 ? '#b45309' : '#dc2626')">{{ etb(r.outstandingAmount) }}</span>
+                </td>
+                <td class="fin-numeric" style="color:#475569">{{ etb(r.ledgerDebit) }}</td>
+                <td class="fin-numeric font-semibold" [style.color]="r.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(r.difference) }}</td>
+              </tr>
+            </tbody>
+            <tbody *ngIf="report.byMember.length === 0">
+              <tr>
+                <td colspan="6" class="text-center py-8" style="color:#94a3b8">No share subscriptions or purchases recorded in this period.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Transactions register -->
+      <div class="fin-card overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+          <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+            <span class="w-2 h-2 rounded-full" style="background:#3b82f6"></span>
+            Purchase Register
+          </h2>
+          <span class="fin-section-badge" style="background:#dbeafe;color:#1e40af">{{ report.transactionCount }} purchase(s)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="fin-table">
+            <thead>
+              <tr>
+                <th (click)="toggleDateSort()" class="cursor-pointer select-none"><span class="inline-flex items-center gap-1">Date <span class="material-icons text-[13px]">{{ sortIcon('date', 'date', sortAsc) }}</span></span></th>
+<th>Member</th>
+                <th class="fin-text-right">Units</th>
+                <th class="fin-text-right">Amount Paid</th>
+                <th class="fin-text-right">Service fee</th>
+                <th class="fin-text-right">Purchase Amount</th>
+                <th>Bank / Account</th>
+                <th>Reference</th>
+                <th>Ledger</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tx of sortedTransactions(report)">
+                <td class="whitespace-nowrap" style="color:#475569">{{ fmtDate(tx.date) }}</td>
+                <td>
+                  <span class="font-medium" style="color:#1e293b">{{ tx.memberName }}</span>
+                  <span class="text-xs ml-1" style="color:#94a3b8">{{ tx.memberNumber }}</span>
+                </td>
+                <td class="fin-numeric" style="color:#475569">{{ etb(tx.amount) }}</td>
+                <td class="fin-numeric" style="color:#b45309">{{ etb(tx.serviceFee) }}</td>
+                <td class="fin-numeric font-semibold" style="color:#1e40af">{{ etb(tx.shareAmount) }}</td>
+                <td style="color:#475569">{{ tx.bankName || '—' }}</td>
+                <td class="font-mono text-xs" style="color:#64748b">{{ tx.transactionReference || '—' }}</td>
+                <td><span class="fin-chip" [class]="reconciledClass(tx.reconciled)">{{ reconciledLabel(tx.reconciled) }}</span></td>
+              </tr>
+            </tbody>
+            <tbody *ngIf="report.transactions.length === 0">
+              <tr>
+                <td colspan="9" class="text-center py-8" style="color:#94a3b8">No share purchases in this period.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary sidebar -->
+    <div class="space-y-5">
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Summary</h3>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Subscribed</dt>
+            <dd class="font-semibold" style="color:#4338ca">{{ etb(report.subscribedAmountTotal) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Purchased</dt>
+            <dd class="font-semibold" style="color:#1e293b">{{ etb(report.shareCapitalTotal) }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Outstanding</dt>
+            <dd class="font-extrabold" [style.color]="report.outstandingAmountTotal === 0 ? '#065f46' : (report.outstandingAmountTotal > 0 ? '#b45309' : '#dc2626')">{{ etb(report.outstandingAmountTotal) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Purchase units</dt>
+            <dd class="font-semibold" style="color:#1e293b">{{ num(report.unitsTotal) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Service fees</dt>
+            <dd class="font-semibold" style="color:#b45309">{{ etb(report.serviceFeeTotal) }}</dd>
+          </div>
+          <div class="h-px my-3" style="background:#e2e8f0"></div>
+          <div class="flex justify-between">
+            <dt style="color:#64748b">Difference</dt>
+            <dd class="font-extrabold" [style.color]="report.difference === 0 ? '#065f46' : '#dc2626'">{{ etb(report.difference) }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="fin-card p-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider mb-4" style="color:#1e3a5f">Reconciliation status</h3>
+        <div class="flex items-center gap-3">
+          <span class="material-icons" [style.color]="report.difference === 0 ? '#10b981' : '#dc2626'" style="font-size:28px">
+            {{ report.difference === 0 ? 'verified' : 'error_outline' }}
+          </span>
+          <p class="text-xs" style="color:#475569">
+            <ng-container *ngIf="report.difference === 0; else mismatched">
+              {{ num(report.reconciledCount, 0) }} of {{ num(report.transactionCount, 0) }} purchases match the finance (journal) system.
+            </ng-container>
+            <ng-template #mismatched>
+              Share purchases differ from ledger debit entries by {{ etb(abs(report.difference)) }}.
+            </ng-template>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  </ng-container>
+
+  <!-- Chart view -->
+  <ng-container *ngIf="view === 'CHART'">
+    <div *ngIf="chartsEmpty(report); else chartContent" class="fin-card p-10 text-center" style="color:#94a3b8">
+      <span class="material-icons" style="font-size:36px">insights</span>
+      <p class="mt-2 text-sm">No share purchases to chart for this period.<br>Switch to Table view or widen the period.</p>
+    </div>
+    <ng-template #chartContent>
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <!-- Monthly purchase trend -->
+        <div class="fin-card overflow-hidden xl:col-span-2">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#3b82f6"></span>
+              Monthly Share Purchase Trend
+            </h2>
+            <span class="fin-section-badge" style="background:#dbeafe;color:#1e40af">{{ purchaseTrend(report).length }} month(s)</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="purchaseTrend(report) as trend">
+              <svg *ngIf="trend.length > 0" viewBox="0 0 640 260" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="shrTrendBar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#34d399"></stop>
+                    <stop offset="100%" stop-color="#065f46"></stop>
+                  </linearGradient>
+                </defs>
+                <rect *ngFor="let b of trend" [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.w" [attr.height]="b.h" rx="4" fill="url(#shrTrendBar)">
+                  <title>{{ b.label }} · {{ etb(b.amount) }} · {{ num(b.units, 0) }} unit(s)</title>
+                </rect>
+                <text *ngFor="let b of trend" [attr.x]="b.x + b.w / 2" [attr.y]="b.y - 6" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">{{ b.display }}</text>
+                <text *ngFor="let b of trend" [attr.x]="b.x + b.w / 2" [attr.y]="252" text-anchor="middle" font-size="10" fill="#64748b">{{ b.label }}</text>
+              </svg>
+              <p *ngIf="trend.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No purchases in this period to chart.</p>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Subscriptions vs purchases -->
+        <div class="fin-card overflow-hidden">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#4338ca"></span>
+              Subscriptions vs Purchases
+            </h2>
+            <span class="fin-section-badge" style="background:#e0e7ff;color:#3730a3">all-time</span>
+          </div>
+          <div class="p-4">
+            <div class="flex flex-col items-center gap-4">
+              <svg viewBox="0 0 240 200" class="w-full max-w-[240px] h-auto">
+                <g transform="translate(120 100)">
+                  <circle r="70" fill="none" stroke="#e2e8f0" stroke-width="26"></circle>
+                  <circle *ngFor="let s of issueSlices(report)" r="70" fill="none" [attr.stroke]="s.color" stroke-width="26"
+                          [attr.stroke-dasharray]="s.dash" [attr.transform]="'rotate(' + s.rotate + ')'">
+                    <title>{{ s.name }} · {{ etb(s.value) }} ({{ num(s.percent, 1) }}% of subscribed)</title>
+                  </circle>
+                  <text x="0" y="-6" text-anchor="middle" font-size="11" fill="#64748b">Issued</text>
+                  <text x="0" y="15" text-anchor="middle" font-size="16" font-weight="700" fill="#1e293b">{{ etb(report.subscribedCapitalTotal) }}</text>
+                </g>
+              </svg>
+              <div class="w-full space-y-1.5">
+                <div class="flex items-center justify-between text-sm py-0.5">
+                  <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full inline-block" style="background:#4338ca"></span>
+                    <span style="color:#334155">Subscribed (issued)</span>
+                  </span>
+                  <span class="font-semibold" style="color:#4338ca">{{ etb(report.subscribedCapitalTotal) }}</span>
+                </div>
+                <div *ngFor="let s of issueSlices(report)" class="flex items-center justify-between text-sm py-0.5">
+                  <span class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full inline-block" [style.background]="s.color"></span>
+                    <span style="color:#334155">{{ s.name }}</span>
+                  </span>
+                  <span class="font-semibold" style="color:#1e293b">{{ etb(s.value) }} <span class="text-xs" style="color:#94a3b8">({{ num(s.percent, 1) }}%)</span></span>
+                </div>
+                <div *ngIf="issueSlices(report).length === 0" class="text-center py-6 text-sm" style="color:#94a3b8">No subscriptions recorded yet.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top buyers -->
+        <div class="fin-card overflow-hidden">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#10b981"></span>
+              Top Buyers
+            </h2>
+            <span class="fin-section-badge" style="background:#d1fae5;color:#065f46">top {{ topBuyers(report).length }}</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="topBuyers(report) as tops">
+              <svg *ngIf="tops.length > 0" [attr.viewBox]="'0 0 620 ' + (30 + tops.length * 30)" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                <text *ngFor="let t of tops" [attr.x]="4" [attr.y]="t.y + 11" font-size="10">
+                  <tspan fill="#334155" font-weight="600">{{ t.name }}</tspan>
+                  <tspan fill="#94a3b8"> · #{{ t.number }}</tspan>
+                </text>
+                <rect *ngFor="let t of tops" [attr.x]="t.x" [attr.y]="t.y" [attr.width]="t.w" [attr.height]="t.h" rx="4" fill="#10b981">
+                  <title>{{ t.name }} · {{ etb(t.value) }} purchased</title>
+                </rect>
+                <text *ngFor="let t of tops" [attr.x]="t.x + t.w + 6" [attr.y]="t.y + 12" font-size="10" font-weight="600" fill="#065f46">{{ t.display }}</text>
+              </svg>
+              <p *ngIf="tops.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">No buyer data for this period.</p>
+            </ng-container>
+          </div>
+        </div>
+
+        <!-- Authorized capital utilization -->
+        <div class="fin-card overflow-hidden xl:col-span-2">
+          <div class="px-5 py-3 flex items-center justify-between" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <h2 class="font-bold text-sm uppercase tracking-wider flex items-center gap-2" style="color:#1e3a5f">
+              <span class="w-2 h-2 rounded-full" style="background:#4338ca"></span>
+              Authorized Capital Utilization
+            </h2>
+            <span class="fin-section-badge" style="background:#e0e7ff;color:#3730a3">Authorized {{ etb(capitalPosition(report).authorized) }}</span>
+          </div>
+          <div class="p-4">
+            <ng-container *ngIf="capitalSegs(report) as segs">
+              <div *ngIf="segs.length === 0" class="text-center py-8 text-sm" style="color:#94a3b8">
+                Set an <strong>Authorized Capital</strong> in <span style="color:#64748b">Settings → Share Settings</span> to chart utilization.
+              </div>
+              <ng-container *ngIf="segs.length > 0">
+                <svg viewBox="0 0 620 96" class="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                  <rect *ngFor="let s of segs" [attr.x]="s.x" y="26" [attr.width]="s.w" height="32" rx="4" [attr.fill]="s.color">
+                    <title>{{ s.name }} · {{ etb(s.value) }} ({{ num(s.pct, 1) }}%)</title>
+                  </rect>
+                  <ng-container *ngFor="let s of segs">
+                    <text *ngIf="s.w > 40" [attr.x]="s.x + s.w / 2" y="44" text-anchor="middle" font-size="9" font-weight="600" fill="#ffffff">{{ num(s.pct, 1) }}%</text>
+                  </ng-container>
+                  <ng-container *ngFor="let s of segs">
+                    <text *ngIf="s.w > 26" [attr.x]="s.x + s.w / 2" y="80" text-anchor="middle" font-size="9" fill="#64748b">{{ s.name }}</text>
+                  </ng-container>
+                </svg>
+                <div class="mt-2 flex flex-wrap items-center justify-center gap-6 text-xs" style="color:#475569">
+                  <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#10b981"></span> Purchased {{ etb(capitalPosition(report).purchased) }}</span>
+                  <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#f59e0b"></span> Outstanding {{ etb(capitalPosition(report).outstanding) }}</span>
+                  <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#cbd5e1"></span> Available {{ etb(capitalPosition(report).available) }}</span>
+                </div>
+              </ng-container>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ng-container>
+</div>
+
+<ng-template #loadingOrEmpty>
+  <div class="fin-page">
+    <div *ngIf="loading$ | async" class="flex items-center justify-center py-24 flex-col gap-3">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p class="text-sm font-semibold" style="color:#64748b">Loading share purchase report…</p>
+    </div>
+  </div>
+</ng-template>

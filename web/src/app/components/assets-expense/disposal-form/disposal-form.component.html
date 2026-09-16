@@ -1,0 +1,49 @@
+<div>
+  <div class="px-6 py-5 flex items-center gap-3" style="background:linear-gradient(135deg,#7f1d1d,#991b1b)">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
+      <span class="material-icons text-white" style="font-size:20px">delete_sweep</span>
+    </div>
+    <div>
+      <h2 class="text-white font-bold text-base m-0">Dispose Asset</h2>
+      <p class="text-xs m-0" style="color:#fca5a5">{{ data.asset.name }}</p>
+    </div>
+  </div>
+  <mat-dialog-content class="px-6 py-5">
+    <form [formGroup]="form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Condition</mat-label>
+        <mat-select formControlName="condition" required>
+          <mat-option *ngFor="let c of conditions" [value]="c.value">{{ c.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Disposal Date</mat-label>
+        <input matInput formControlName="disposalDate" type="date" required />
+      </mat-form-field>
+      <ng-container *ngIf="condition === 'SALE'">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Sale Proceeds (ETB)</mat-label>
+          <input matInput formControlName="proceeds" type="number" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Proceeds Account (bank / cash)</mat-label>
+          <mat-select formControlName="proceedsAccountId">
+            <mat-option *ngFor="let acc of accounts$ | async" [value]="acc.id">{{ acc.name }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </ng-container>
+      <mat-form-field appearance="outline" class="w-full col-span-1 sm:col-span-2">
+        <mat-label>Note</mat-label>
+        <textarea matInput formControlName="note" rows="2"></textarea>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="px-6 py-4" style="border-top:1px solid #e2e8f0;margin-top:auto">
+    <button mat-button (click)="onCancel()" style="color:#64748b;font-weight:500">Cancel</button>
+    <button [disabled]="!form.valid" (click)="submit()"
+            class="px-5 py-2 rounded-xl text-sm font-semibold border-0 cursor-pointer ml-2 transition-all"
+            style="background:#991b1b;color:white;box-shadow:0 4px 12px rgba(153,27,27,0.3)">
+      Dispose Asset
+    </button>
+  </mat-dialog-actions>
+</div>
